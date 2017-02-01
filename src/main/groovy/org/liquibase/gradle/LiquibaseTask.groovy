@@ -89,7 +89,7 @@ class LiquibaseTask extends DefaultTask {
 
 
 		activity.parameters.each {
-			args += "-D${it.key}=${it.value}"
+			System.setProperty(it.key.toString(), it.value.toString())
 		}
 
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
