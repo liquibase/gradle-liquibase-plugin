@@ -97,7 +97,7 @@ class LiquibaseTask extends DefaultTask {
 		// put them after the command value, the --verbose value of the status
 		// command will not be processed correctly.
 		activity.parameters.each {
-			args += "-D${it.key}=${it.value}"
+			System.setProperty(it.key.toString(), it.value.toString())
 		}
 
 		// Because of Liquibase CORE-2519, a verbose status only works when
