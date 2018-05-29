@@ -112,7 +112,7 @@ class LiquibaseTask extends JavaExec {
 
 		// Set values on the JavaExec task
 		setArgs(args)
-		setClasspath(project.liquibase.classpath)
+		setClasspath(project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION))
 		setMain(project.liquibase.mainClassName)
 
 		println "liquibase-plugin: Running the '${activity.name}' activity..."

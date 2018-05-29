@@ -40,8 +40,6 @@ class LiquibaseExtension {
 
 	String mainClassName = 'liquibase.integration.commandline.Main'
 
-	Configuration classpath
-
   LiquibaseExtension(NamedDomainObjectContainer<Activity> activities) {
     this.activities = activities
   }
