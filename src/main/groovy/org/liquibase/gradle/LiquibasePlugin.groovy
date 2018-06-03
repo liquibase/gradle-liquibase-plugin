@@ -23,9 +23,11 @@ import org.gradle.api.Plugin
 class LiquibasePlugin
 		implements Plugin<Project> {
 
+	public static final String LIQUIBASE_RUNTIME_CONFIGURATION = "liquibaseRuntime";
 
 	void apply(Project project) {
 		applyExtension(project)
+		applyConfiguration(project)
 		applyTasks(project)
 	}
 
@@ -36,6 +38,12 @@ class LiquibasePlugin
 		}
 		project.configure(project) {
 			extensions.create("liquibase", LiquibaseExtension, activities)
+		}
+	}
+
+	void applyConfiguration(Project project) {
+		project.configure(project) {
+			configurations.maybeCreate(LIQUIBASE_RUNTIME_CONFIGURATION)
 		}
 	}
 

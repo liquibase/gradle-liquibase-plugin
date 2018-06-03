@@ -17,8 +17,8 @@
 
 package org.liquibase.gradle
 
-import liquibase.integration.commandline.Main
-import org.gradle.api.DefaultTask
+import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -26,7 +26,8 @@ import org.gradle.api.tasks.TaskAction
  *
  * @author Stven C. Saliman
  */
-class LiquibaseTask extends DefaultTask {
+class LiquibaseTask extends JavaExec {
+
 	/**
 	 * The Liquibase command to run.
 	 */
@@ -37,7 +38,8 @@ class LiquibaseTask extends DefaultTask {
 	def requiresValue = false
 
 	@TaskAction
-	def liquibaseAction() {
+	@Override
+	public void exec() {
 
 		def activities = project.liquibase.activities
 		def runList = project.liquibase.runList
@@ -108,9 +110,13 @@ class LiquibaseTask extends DefaultTask {
 			args += value
 		}
 
+		// Set values on the JavaExec task
+		setArgs(args)
+		setClasspath(project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION))
+		setMain(project.liquibase.mainClassName)
+
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
 		project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
-		Main.run(args as String[])
-
+		super.exec()
 	}
 }

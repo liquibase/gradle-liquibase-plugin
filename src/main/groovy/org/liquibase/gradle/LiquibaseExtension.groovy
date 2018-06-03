@@ -18,6 +18,7 @@
 package org.liquibase.gradle
 
 import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.artifacts.Configuration
 
 /**
  * This is the Gradle extension that configures the Liquibase plugin.  All
@@ -36,6 +37,8 @@ class LiquibaseExtension {
 	 * defined, the plugin will run all activities.
 	 */
 	def runList
+
+	String mainClassName = 'liquibase.integration.commandline.Main'
 
   LiquibaseExtension(NamedDomainObjectContainer<Activity> activities) {
     this.activities = activities
