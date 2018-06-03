@@ -112,7 +112,12 @@ class LiquibaseTask extends JavaExec {
 
 		// Set values on the JavaExec task
 		setArgs(args)
-		setClasspath(project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION))
+
+		def classpath = project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION)
+		if ( classpath == null || classpath.isEmpty() ) {
+			throw new RuntimeException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
+		}
+		setClasspath(classpath)
 		setMain(project.liquibase.mainClassName)
 
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
