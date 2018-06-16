@@ -12,7 +12,7 @@ build.gradle file.
 
 ```groovy
 plugins {
-  id 'org.liquibase.gradle' version '1.2.4'
+  id 'org.liquibase.gradle' version '2.0.0'
 }
 ```
 
@@ -24,11 +24,26 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.liquibase:liquibase-gradle-plugin:1.2.4"
+        classpath "org.liquibase:liquibase-gradle-plugin:2.0.0"
     }
 }
 apply plugin: 'org.liquibase.gradle'
 ```
+
+In addition, you will need to add `liquibaseRuntime` dependencies to your
+dependencies block.  At a minimum, you'll need to include Liquibase itself 
+along with a database driver:
+```groovy
+dependencies {
+  // All of your normal project dependencies would be here in addition to...
+  liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
+  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:1.2.1'
+  liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
+}
+```
+
+Finally, you'll need a `liquibase` block to configure what liquibase will do 
+as described in the Usage section.
 
 Example
 -------
@@ -39,6 +54,36 @@ plugin, and an example directory setup as well.
 
 News
 ----
+### June 15, 2018
+We're pleased to announce the upcoming release of version 2.0.0 of the
+Liquibase Gradle plugin, with much thanks to Jasper de Vries (@litpho).  We're
+still cleaning up some things in the release, but users who need the latest
+version of Liquibase can use the 2.0.0-SNAPSHOT release by including 
+`maven { url "http://oss.sonatype.org/content/repositories/snapshots" }` as
+a `buildscript` repository.
+
+Version 2.0.0 Changes the way the plugin sets up the classpath when running
+Liquibase.  This allows us to isolate the classpath Liquibase uses from the one
+Gradle is using.  Note that this is a breaking change!  Builds will not work 
+without first fixing your build scripts to set up the classpath. 
+
+Prior to version 2.0.0, you would need to include the plugin and the database
+drivers in the `buildscript` block.  As of version 2.0.0, only the plugin itself
+needs to be in the `buildscript` block.  The database driver, parsers, and any
+other libraries needed to run Liquibase are now specified as `liquibaseRuntime`
+dependencies in the `dependencies` block of your build file.  In addition, the
+plugin no longer includes the Groovy DSL as a dependency.  If you want to use
+Groovy for your changesets (and why wouldn't you?), the Groovy DSL will also
+need to be a `liquibaseRuntime` dependency.
+
+These changes make it easier to use new versions of Liquibase and the Groovy
+DSL as they come out without having to override what the plugin itself is 
+trying to do.  It also avoids the issues that can happen when Liquibase wants 
+different, and conflicting, libraries from what Gradle is using.
+
+At the moment, logging seems to have issues, so you no longer see the change
+sets listed as they run.  We are working on this problem.
+
 ### March 5, 2017
 Version 1.2.4 is a minor release that fixes a bug with the excludeObjects and
 includeObjects options.
@@ -54,89 +99,39 @@ around a Liquibase argument parsing bug.
 ### November 30, 2015
 The plugin has been updated to support Liquibase 3.4.2.
 
-### August 3, 2015
-The plugin has been updated to support Liquibase 3.3.5.
-
-### May 16, 2015
-We are proud to announce that the Liquibase Gradle Plugin is now a part of the 
-Liquibase organization.  I will continue maintain the code, but bringing this 
-project into the Liquibase organization will help keep all things Liquibase 
-together in one place.  This will help promote Liquibase adoption by making it
-easier for more people to use, and it will help people stay up to date with the
-latest releases. As part of that move, the artifact name has changed from 
-```net.saliman:gradle-liquibase-plugin``` to
-```org.liquibase:liquibase-gradle-plugin``` to be consistent with the rest of the
-Liquibase artifacts.  Also, starting with plugin version 1.1.0, the plugin is 
-available via the official Gradle plugin portal.  A special thank you to Nathan
-Voxland for his help and support in bringing the Liquibase project and the 
-Groovy Plugin together into one home.
-
-### March 9, 2015
-The plugin has been updated to support Liquibase 3.3.2. Version 1.0.2 fixes a
-bug that prevented Groovy changelogs from working in Java versions before JDK 8.
-As part of this release, I've bumped the version of Groovy that the plugin uses.
-This can cause issues in Gradle 1.x.  The workaround is to add
-```classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'``` to the
-buildscript dependencies.
-
-
-### September 10, 2014
-This plugin is designed to be a wrapper for the Liquibase project, so it 
-creates tasks to match the various Liquibase commands.  This can cause conflicts
-with tasks that other plugins create, so we've added the ability to add a 
-prefix to all the tasks this plugin creates.  See the Usage section for more
-details.
-
-### June 15, 2014
-We are proud to announce the long awaited release of version 1.0.0 of the 
-Gradle Liquibase Plugin. Version 1.0.0 uses version the latest release of 
-Liquibase (3.1.1), and it appears to work fine with both Gradle 1.x releases as
-well as the upcoming Gradle 2.0 release.
-
-Tim Berglund has asked me to take on the continued maintenance of this plugin,
-so I've had to change the maven group ID to one for which I have permission to 
-publish on Maven Central.  Going forward, this plugin will be available under 
-the ```net.saliman``` group id.  The artifact ID, ```gradle-liquibase-plugin```
-will remain the same.  
-
-My thanks to Tim for the opportunity to help out with this great plugin.
- 
-Steve Saliman
-
-Version 1.0.0 of the Liquibase plugin uses Liquibase 3, instead of Liquibase
-2, and several things have been deprecated from the Groovy DSL to maintain
-compatibility with Liquibase XML. A list of deprecated items can be found in
-the README for the [Groovy DSL project](https://github.com/tlberglund/groovy-liquibase)
-in the *Usage* section.  To upgrade to version 1.0.0, we strongly recommend the
-following procedure:
+Upgrading the version of Liquibase itself
+-----------------------------------------
+Most of the time, the new versions of Liquibase works the same as the old one,
+but sometimes the new versions have compatibility issues with existing change
+sets, as happened when Liquibase 3 was released.  When this happens, we 
+reccommend the following procedure to do the upgrade:
 
 1. Make sure all of your Liquibase managed databases are up to date by running
-   ```gradle update``` on them *before upgrading to version 1.0.0 of the
+   `gradle update` on them *before upgrading to version 1.0.0 of the
    Liquibase plugin*.
 
 2. Create a new, throw away database to test your Liquibase change sets.  Run
-   ```gradle update``` on the new database using the latest version of
-   the Liquibase plugin.  This is important because of the deprecated items in
-   the Groovy DSL, and because there are some subtle differences in the ways
-   the different Liquibase versions generate SQL.  For example, adding a default
-   value to a boolean column in MySql using ```defaultValue: "0"``` worked fine
+   `gradle update` on the new database using the latest version of the
+	 Liquibase plugin.  This is important because of the deprecated items in the
+	 Groovy DSL, and because there are some subtle differences in the ways the
+	 different Liquibase versions generate SQL.  For example, adding a default
+   value to a boolean column in MySql using `defaultValue: "0"` worked fine
    in Liquibase 2, but in Liquibase 3, it generates SQL that doesn't work for
-   MySql - ```defaultValueNumeric: 0``` needs to be used instead.
+   MySql - `defaultValueNumeric: 0` needs to be used instead.
 
 3. Once you are sure all of your change sets work with the latest Liquibase
    plugin, clear all checksums that were calculated by Liquibase 2 by running
-   ```gradle clearChecksums``` against all databases.
+   `gradle clearChecksums` against all databases.
 
-4. Finally, run ```gradle changeLogSync``` on all databases to calculate new
+4. Finally, run `gradle changeLogSync` on all databases to calculate new
    checksums.
 
 Configuring the plugin in version 1.0.0 is different from previous versions.
-The Liquibase configuration now goes in a ```liquibase``` block of the
-build.gradle file instead of separate blocks. The ```changelogs``` and
-```database``` closures have been merged into a single ```activities``` closure
-with methods instead of variables.  The ```defaultDatabase``` and
-```defaultChangelogs``` variables have been replaced with the optional
-```runList``` variable.
+The Liquibase configuration now goes in a `liquibase` block of the
+build.gradle file instead of separate blocks. The `changelogs` and `database` 
+closures have been merged into a single `activities` closure with methods
+instead of variables.  The `defaultDatabase` and `defaultChangelogs` variables
+have been replaced with the optional `runList` variable.
 
 For example:
 
@@ -175,50 +170,52 @@ liquibase {
 
 ## Usage
 The Liquibase plugin allows you to use Liquibase to manage database updates.
-You can parse changesets using any Liquibase parser that is in the classpath.
-Some parsers, such as the XML parser and the YAML parser, are part of Liquiabse
-itself, although some parsers require you to add additional dependencies to the
-buildscript.  For example, the YAML parser requires ```org.yaml:snakeyaml:1.15```.
+You can parse changesets using any Liquibase parser that is in the classpath 
+when Liquibase runs.  Some parsers, such as the XML parser and the YAML parser,
+are part of Liquiabse itself, although some parsers require you to add 
+additional dependencies to the liquibase configuration.  For example, the YAML
+ parser requires `org.yaml:snakeyaml:1.15`.
 
-This plugin adds support for the the Groovy DSL, which is a much nicer way to 
-write changelogs, especially since Groovy is the language of Gradle scripts 
-themselves.  The Groovy DSL syntax intended to mirror the Liquibase XML syntax
-directly, such that mapping elements and attributes from the Liquibase
-documentation to Groovy builder syntax will result in a valid changelog. Hence
-this DSL is not documented separately from the Liquibase XML format.  However
-there are some minor differences or enhancements to the XML format, and there
-are some gaping holes in Liquibase's documentation of the XML. Those holes are
-filled, and differences explained in the documentation on the
+One of the best ways to parse Liquiabse changesets is with the Groovy DSL, 
+which is a much nicer way to write changelogs, especially since Groovy is the 
+language of Gradle scripts themselves.  The Groovy DSL syntax intended to 
+mirror the Liquibase XML syntax directly, such that mapping elements and 
+attributes from the Liquibase documentation to Groovy builder syntax will 
+result in a valid changelog. Hence this DSL is not documented separately from
+the Liquibase XML format.  However there are some minor differences or 
+enhancements to the XML format, and there are some gaping holes in Liquibase's
+documentation of the XML. Those holes are filled, and differences explained in
+the documentation on the 
 [Groovy Liquibase DSL](https://github.com/liquibase/liquibase-groovy-dsl) 
-project page.  To use the Groovy DSL, simply specify a ```changeLogFile``` that
+project page.  To use the Groovy DSL, simply include the Groovy DSL as a
+liquibaseRuntime dependency and specify a `changeLogFile` that
 ends in .groovy.  For those who, for some reason, still prefer XML, JSON, or
-Yaml, you can use these formats by specifying a ```changeLogFile``` that ends
-in the appropriate extension, and Liquibase will find and use the correct 
-parser.
+Yaml, you can use these formats by specifying a `changeLogFile` that ends in 
+the appropriate extension, and Liquibase will find and use the correct parser.
 
 The Liquibase plugin is meant to be a light weight front end for the Liquibase
 command line utility.  When the liquibase plugin is applied, it creates a
-Gradle task for each command supported by Liquibase. ```gradle tasks``` will
+Gradle task for each command supported by Liquibase. `gradle tasks` will
 list out these tasks.  The
 [Liquibase Documentation](http://www.liquibase.org/documentation/command_line.html)
 describes what each command does and what parameters each command uses.  If you
 want to prefix each task to avoid task name conflicts, set a value for the 
-```liquibaseTaskPrefix``` property.  This will tell the liquibase plugin to 
+`liquibaseTaskPrefix` property.  This will tell the liquibase plugin to 
 capitalize the task name and prefix it with the given prefix.  For example,
-if Gradle is invoked with ```-PliquibaseTaskPrefix=liquibase```, or you put
-```liquibaseTaskPrefix=liquibase``` in ```gradle.properties``` then this 
-plugin will create tasks named ```liquibaseUpdate```, ```liquibaseTag```, etc.
+if Gradle is invoked with `-PliquibaseTaskPrefix=liquibase`, or you put
+`liquibaseTaskPrefix=liquibase` in `gradle.properties` then this plugin will 
+create tasks named `liquibaseUpdate`, `liquibaseTag`, etc.
 
-Parameters for the commands are configured in the ```liquibase``` block inside
+Parameters for the commands are configured in the `liquibase` block inside
 the build.gradle file.  This block contains a series of, "activities", each
 defining a series of Liquibase parameters.  Any method in an "activity" is
 assumed to be a Liquibase command line parameter.  For example, including
-```changeLogFile 'myfile.groovy'``` in an activity does the same thing as
-```--changeLogfile=myfile.groovy``` would do on the command line.  Including
-```difftypes 'data'``` in an activity does the same thing as 
-```difftypes=data``` would do on the command line, etc.  The Liquibase
+`changeLogFile 'myfile.groovy'` in an activity does the same thing as
+`--changeLogfile=myfile.groovy` would do on the command line.  Including
+`difftypes 'data'` in an activity does the same thing as 
+`difftypes=data` would do on the command line, etc.  The Liquibase
 documentation details all the valid command line parameters.  The 
-```liquibase``` block also has an optional "runList", which determines which 
+`liquibase` block also has an optional "runList", which determines which 
 activities are run for each task.  If no runList is defined, the Liquibase 
 Plugin will run all the activities.  NOTE: the order of execution when there is
 no runList is not guaranteed.
@@ -229,7 +226,7 @@ Let's suppose that for each deployment, you need to update the data model for
 your application's database, and wou also need to run some SQL statements
 in a separate database used for security.  Additionally, you want to 
 occasionally run a diff between the changelog and the database.  The
- ```liquibase``` block might look like this:
+ `liquibase` block might look like this:
 
 ```groovy
 liquibase {
@@ -258,36 +255,35 @@ liquibase {
 }
 ```
 
-Some things to keep in mind when setting up the ```liquibase``` block:
+Some things to keep in mind when setting up the `liquibase` block:
 
 1. We only need one activity block for each type of activity.  In the example 
    above, the database credentials are driven by build properties so that the
    correct database can be specified at build time so that you don't need a
    separate activity for each database.
 
-2. By making the value of ```runList``` a property, you can determine the
+2. By making the value of `runList` a property, you can determine the
    activities that get run at build time.  For example, if you didn't need to
    run the security updates in the CI environment, you could type
-   ```gradle update -PrunList=main``` For environments where you do need the
-   security updates, you would use ```gradle update -PrunList='main,security'```.
-   To do a diff, you'd run ```gradle diff -PrunList=diffMain```.  This use of 
+   `gradle update -PrunList=main` For environments where you do need the
+   security updates, you would use `gradle update -PrunList='main,security'`.
+   To do a diff, you'd run `gradle diff -PrunList=diffMain`.  This use of 
    properties is the reason the runList is a string and not an array.
 
 3. The methods in each activity block are meant to be pass-throughs to Liquibase.
    Any valid Liquibase command parameter is a legal method here.  The command 
    parameters are parameters in the Liquibase documentation that start with a
-    ```--``` such as ```--difftypes``` or ```--logLevel```.  For example,
-   if you wanted to increase the log level, you could add ```logLevel debug```
-   to the activity.  
+   `--` such as `--difftypes` or `--logLevel`.  For example, if you wanted to
+	 increase the log level, you could add `logLevel debug` to the activity.  
 
 4. In addition to the command pass-through methods of an activity, there is a
-   ```changeLogParameters``` method.  This method takes a map, and is used to
+   `changeLogParameters` method.  This method takes a map, and is used to
    setup token substitution in the changeLogs.  See the Liquibase documentation
    for more details on token substitution.
 
-5. Some Liquibase commands like ```tag``` and ```rollback``` require a value,
-   in this case a tag name.  Since the value will likely change from run to run,
-   the command value is not configured in the ```liquibase``` block.  To supply
-   a command value, add ```-PliquibaseCommandValue=<value>``` to the gradle
+5. Some Liquibase commands like `tag` and `rollback` require a value, in this
+   case a tag name.  Since the value will likely change from run to run, the
+   command value is not configured in the `liquibase` block.  To supply
+   a command value, add `-PliquibaseCommandValue=<value>` to the gradle
    command.
    
