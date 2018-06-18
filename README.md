@@ -295,5 +295,3 @@ liquibase {
   }
 }
 ```
-
-## Usage
