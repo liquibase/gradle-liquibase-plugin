@@ -221,6 +221,15 @@ Some things to keep in mind when setting up the `liquibase` block:
    a command value, add `-PliquibaseCommandValue=<value>` to the gradle
    command.
    
+6. Optionally, if you want to use a different entry point than the default
+   `liquibase.integration.commandline.Main`, you can configure a different main
+   class. This is useful if you want, for instance, to derive certain company-specific
+   parameters.
+```
+liquibase {
+  mainClassName = 'liquibase.ext.commandline.LiquibaseAlternativeMain'
+}
+```
 
 For an example of how to configure and use this plugin, see the
 [Liquibase Workshop](https://github.com/stevesaliman/liquibase-workshop) repo.
