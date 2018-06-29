@@ -7,7 +7,7 @@ Saliman.
 
 News
 ----
-### June 15, 2018
+### June 28, 2018
 We're pleased to announce the upcoming release of version 2.0.0 of the
 Liquibase Gradle plugin, with much thanks to Jasper de Vries (@litpho).  We're
 still cleaning up some things in the release, but users who need the latest
@@ -27,7 +27,8 @@ other libraries needed to run Liquibase are now specified as `liquibaseRuntime`
 dependencies in the `dependencies` block of your build file.  In addition, the
 plugin no longer includes the Groovy DSL as a dependency.  If you want to use
 Groovy for your changesets (and why wouldn't you?), the Groovy DSL will also
-need to be a `liquibaseRuntime` dependency.
+need to be a `liquibaseRuntime` dependency, and it will also need to be the
+`2.0.0-SNAPSHOT` version if you want to use Liquibase versions > 3.4.2.
 
 These changes make it easier to use new versions of Liquibase and the Groovy
 DSL as they come out without having to override what the plugin itself is 
@@ -134,7 +135,7 @@ An example of `liquibaseRuntime` entries is below:
 dependencies {
   // All of your normal project dependencies would be here in addition to...
   liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
-  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:1.2.1'
+  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.0.0-SNAPSHOT'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
 }
 ```
