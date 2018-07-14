@@ -7,15 +7,12 @@ Saliman.
 
 News
 ----
-### June 28, 2018
-We're pleased to announce the upcoming release of version 2.0.0 of the
-Liquibase Gradle plugin, with much thanks to Jasper de Vries (@litpho).  This
-has breaking changes, so please read this.....
-We're
-still cleaning up some things in the release, but users who need the latest
-version of Liquibase can use the 2.0.0-SNAPSHOT release by including 
-`maven { url "http://oss.sonatype.org/content/repositories/snapshots" }` as
-a `buildscript` repository.
+### July 14, 2018
+We're pleased to announce the release of version 2.0.0 of the Liquibase Gradle
+plugin, with much thanks to Jasper de Vries (@litpho).  
+
+**This has breaking changes** so please read all of the information in this 
+section before upgrading.
 
 Version 2.0.0 Changes the way the plugin sets up the classpath when running
 Liquibase.  This allows us to isolate the classpath Liquibase uses from the one
@@ -30,23 +27,50 @@ dependencies in the `dependencies` block of your build file.  In addition, the
 plugin no longer includes the Groovy DSL as a dependency.  If you want to use
 Groovy for your changesets (and why wouldn't you?), the Groovy DSL will also
 need to be a `liquibaseRuntime` dependency, and it will also need to be the
-`2.0.0-SNAPSHOT` version if you want to use Liquibase versions > 3.4.2.
+`2.0.0` version if you want to use Liquibase versions > 3.4.2.
 
 These changes make it easier to use new versions of Liquibase and the Groovy
 DSL as they come out without having to override what the plugin itself is 
 trying to do.  It also avoids the issues that can happen when Liquibase wants 
 different, and conflicting, libraries from what Gradle is using.
 
-Liquibase 3.6 appears to have broken console output and disabled the 
-`--logLevel` argument.  There is an issue in the Liquibase Jira 
-([CORE-3220)](https://liquibase.jira.com/browse/CORE-3220)), but until it gets
-fixed, you can use a Proxy class in the plugin to enable console output.  To 
-use the proxy, simply add
-`mainClassName 'org.liquibase.gradle.OutputEnablingLiquibaseRunner'` to your 
-`liquibase` block in `build.gradle`.  This won't fix the problem with the 
-logLevel argument, but you will at least be able to see output.
+In addition to the changes to to the way the plugin is configured, there are 
+several other changes that are worth noting:
 
-Blurb about 1.2.4 of the plugin and the includeAll problem.....
+1. There was a bug introduced in version 1.2.2 of the plugin regarding filenames
+   and the `includeAll` change. Version 1.2.2 was incorrectly converting all
+   changeset filenames to absolute paths, a bug that was fixed in version 2.0.0.
+   If you are updating from version 1.2.1 or earlier, this change should not
+   effect you, but if you've run changes with version 1.2.2 through 1.2.4, you
+   will need to fix some or all of the paths in the DATABASECHANGELOG table 
+   before running the 2.0.0 version of the plugin.   Failing to do this wil
+   result in Liquibase trying to run the changes again.
+
+2. Liquibase made a change to the checksum logic in version 3.6.0.  According
+   to the Liquibase documentation, Liquibase will just fix the checksums of each
+   change when you run the first update command, but it won't detect changes to
+   any changes that were marked with the `runOnChange`.  If you have any changes
+   that use `runOnChange`, you should run an update once with your old version,
+   then run it again with the new version to fix the checksums.
+
+3. Liquibase changed the `resourceFilter` attribute of the `includeAll` element
+   to just `filter`.  Since the 2.0.0 version of the Groovy DSL was built for 
+   Liquibase 3.6.x, it will throw an error if it finds the old `resourceFilter`
+   attribute, so you will need to convert any effected change sets.  Note that
+   `includeAll` is one of the few things handled by the DSL itself, so `filter`
+   will still work even if you're using an older version of Liquibase.
+
+4. The `alterSequence` change used to have a `willCycle` attribute.  That
+   attribute is now called `cycle`
+
+5. Liquibase 3.6 appears to have broken console output and disabled the 
+   `--logLevel` argument.  There is an issue in the Liquibase Jira 
+   ([CORE-3220)](https://liquibase.jira.com/browse/CORE-3220)), but until it
+   gets fixed, you can use a Proxy class in the plugin to enable console output.
+   To use the proxy, simply add
+   `mainClassName 'org.liquibase.gradle.OutputEnablingLiquibaseRunner'` to your 
+   `liquibase` block in `build.gradle`.  This won't fix the problem with the 
+   logLevel argument, but you will at least be able to see output.
 
 ### March 5, 2017
 Version 1.2.4 is a minor release that fixes a bug with the excludeObjects and
@@ -145,7 +169,7 @@ An example of `liquibaseRuntime` entries is below:
 dependencies {
   // All of your normal project dependencies would be here in addition to...
   liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
-  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.0.0-SNAPSHOT'
+  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.0.0'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
 }
 ```

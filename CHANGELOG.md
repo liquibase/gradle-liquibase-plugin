@@ -1,3 +1,12 @@
+Changes for 2.0.0
+=================
+- The plugin no longer has a transitive dependency on the Liquibase Groovy DSL.
+  **THIS IS A BREAKING CHANGE!** The Groovy DSL is what brought in Liquibase 
+  itself.  It is now up to you to make sure the Groovy DSL and Liquibase itself
+  are on the classpath via `liquibaseRuntime` dependencies. This resolves 
+  Issue 11, Issue 29, and Issue 36.  Thank you to Jasper de Vries (@litpho) for
+  his contribution to this release.
+
 Changes for 1.2.4
 =================
 - fixed support for the excludeObjects/includeObjects options with thanks to
