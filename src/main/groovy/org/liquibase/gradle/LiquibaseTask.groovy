@@ -21,6 +21,8 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
 
+import java.lang.reflect.Field
+
 /**
  * Gradle task that calls Liquibase to run a command.
  *
@@ -118,8 +120,10 @@ class LiquibaseTask extends JavaExec {
 			throw new RuntimeException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
 		}
 		setClasspath(classpath)
+//		configureLogging(classpath, project.liquibase.mainClassName)
+//		setSystemProperties(["mainClass": project.liquibase.mainClassName])
+//		setMain("org.liquibase.gradle.LiquibaseRunner")
 		setMain(project.liquibase.mainClassName)
-
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
 		project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
 		super.exec()

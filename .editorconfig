@@ -1,0 +1,31 @@
+# http://editorconfig.org
+
+root = true
+
+# We use tabs for indentation so that developers can set the indent size to
+# their own preference.
+[*]
+charset = utf-8
+indent_style = tab
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown files have some quirks.  Tab intents cause trouble, as does 4 space
+# indents, which make Markdown think we're dealing with a code block.
+[*.md]
+insert_final_newline = false
+trim_trailing_whitespace = false
+indent_style = space
+indent_size = 2
+
+# Sql files were having problems with tabs...
+[*.sql]
+indent_style = space
+indent_size = 4
+
+# Yaml files don't like tabs either...
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 2
+

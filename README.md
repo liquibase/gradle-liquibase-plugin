@@ -9,7 +9,9 @@ News
 ----
 ### June 28, 2018
 We're pleased to announce the upcoming release of version 2.0.0 of the
-Liquibase Gradle plugin, with much thanks to Jasper de Vries (@litpho).  We're
+Liquibase Gradle plugin, with much thanks to Jasper de Vries (@litpho).  This
+has breaking changes, so please read this.....
+We're
 still cleaning up some things in the release, but users who need the latest
 version of Liquibase can use the 2.0.0-SNAPSHOT release by including 
 `maven { url "http://oss.sonatype.org/content/repositories/snapshots" }` as
@@ -35,8 +37,16 @@ DSL as they come out without having to override what the plugin itself is
 trying to do.  It also avoids the issues that can happen when Liquibase wants 
 different, and conflicting, libraries from what Gradle is using.
 
-At the moment, logging seems to have issues, so you no longer see the change
-sets listed as they run.  We are working on this problem.
+Liquibase 3.6 appears to have broken console output and disabled the 
+`--logLevel` argument.  There is an issue in the Liquibase Jira 
+([CORE-3220)](https://liquibase.jira.com/browse/CORE-3220)), but until it gets
+fixed, you can use a Proxy class in the plugin to enable console output.  To 
+use the proxy, simply add
+`mainClassName 'org.liquibase.gradle.OutputEnablingLiquibaseRunner'` to your 
+`liquibase` block in `build.gradle`.  This won't fix the problem with the 
+logLevel argument, but you will at least be able to see output.
+
+Blurb about 1.2.4 of the plugin and the includeAll problem.....
 
 ### March 5, 2017
 Version 1.2.4 is a minor release that fixes a bug with the excludeObjects and
@@ -190,6 +200,13 @@ liquibase {
 }
 ```
 
+The `liquibase` block can also contain a `mainClassName` which tells the plugin
+the name of the class to invoke in order to run Liquibase.  This value is 
+optional and defaults to `liquibase.integration.commandline.Main`.  This value
+can be changed to call other classes instead, such as the plugin's own 
+`org.liquibase.gradle.OutputEnablingLiquibaseRunner` to fix a Liquibase 3.6
+logging issue.
+
 Some things to keep in mind when setting up the `liquibase` block:
 
 1. We only need one activity block for each type of activity.  In the example 
@@ -205,11 +222,12 @@ Some things to keep in mind when setting up the `liquibase` block:
    To do a diff, you'd run `gradle diff -PrunList=diffMain`.  This use of 
    properties is the reason the runList is a string and not an array.
 
-3. The methods in each activity block are meant to be pass-throughs to Liquibase.
-   Any valid Liquibase command parameter is a legal method here.  The command 
-   parameters are parameters in the Liquibase documentation that start with a
-   `--` such as `--difftypes` or `--logLevel`.  For example, if you wanted to
-	 increase the log level, you could add `logLevel debug` to the activity.  
+3. The methods in each activity block are meant to be pass-throughs to 
+   Liquibase.  Any valid Liquibase command parameter is a legal method here.
+   The command parameters are parameters in the Liquibase documentation that
+   start with a `--` such as `--difftypes` or `--logLevel`.  For example, if
+   you wanted to increase the log level, you could add `logLevel debug` to the
+   activity.  
 
 4. In addition to the command pass-through methods of an activity, there is a
    `changeLogParameters` method.  This method takes a map, and is used to
@@ -245,63 +263,22 @@ sets, as happened when Liquibase 3 was released.  When this happens, we
 reccommend the following procedure to do the upgrade:
 
 1. Make sure all of your Liquibase managed databases are up to date by running
-   `gradle update` on them *before upgrading to version 1.0.0 of the
+   `gradle update` on them *before upgrading to the new version of the
    Liquibase plugin*.
 
 2. Create a new, throw away database to test your Liquibase change sets.  Run
    `gradle update` on the new database using the latest version of the
-	 Liquibase plugin.  This is important because of the deprecated items in the
-	 Groovy DSL, and because there are some subtle differences in the ways the
-	 different Liquibase versions generate SQL.  For example, adding a default
+   Liquibase plugin.  This is important because of the deprecated items in the
+   Groovy DSL, and because there are some subtle differences in the ways the
+   different Liquibase versions generate SQL.  For example, adding a default
    value to a boolean column in MySql using `defaultValue: "0"` worked fine
    in Liquibase 2, but in Liquibase 3, it generates SQL that doesn't work for
    MySql - `defaultValueNumeric: 0` needs to be used instead.
 
 3. Once you are sure all of your change sets work with the latest Liquibase
-   plugin, clear all checksums that were calculated by Liquibase 2 by running
-   `gradle clearChecksums` against all databases.
+   plugin, clear all checksums that were calculated by the old version of 
+   Liquibase 2 by running `gradle clearChecksums` against all databases.
 
 4. Finally, run `gradle changeLogSync` on all databases to calculate new
    checksums.
 
-Configuring the plugin in version 1.0.0 is different from previous versions.
-The Liquibase configuration now goes in a `liquibase` block of the
-build.gradle file instead of separate blocks. The `changelogs` and `database` 
-closures have been merged into a single `activities` closure with methods
-instead of variables.  The `defaultDatabase` and `defaultChangelogs` variables
-have been replaced with the optional `runList` variable.
-
-For example:
-
-```groovy
-changelogs {
-  main {
-    file = file('src/main/db/changelogs.groovy')
-  }
-}
-
-databases {
-  myDB {
-    url = 'jdbc:mysql://localhost:3306/my_db'
-	username= 'myusername'
-	password = 'mypassword'
-  }
-}
-defaultDatabase = databases.myDB
-defaultChangeLogs = changelogs
-```
-
-Became:
-
-```groovy
-liquibase {
-  activities {
-    main {
-      changeLogFile 'src/main/db/changelogs.groovy'
-      url 'jdbc:mysql://localhost:3306/my_db'
-	  username 'myusername'
-	  password 'mypassword'
-    }
-  }
-}
-```

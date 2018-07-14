@@ -29,7 +29,13 @@ import org.gradle.api.artifacts.Configuration
  * @author Steven C. Saliman
  */
 class LiquibaseExtension {
-  final NamedDomainObjectContainer<Activity> activities
+	final NamedDomainObjectContainer<Activity> activities
+
+	/**
+	 * Define the name of the Main class in Liquibase that the plucin should
+	 * call to run Liquibase itself.
+	 */
+	def mainClassName = 'liquibase.integration.commandline.Main'
 	/**
 	 * Define the list of activities that run for each liquibase task.  This
 	 * is a string of comma separated activity names.  This is a string instead
@@ -38,13 +44,11 @@ class LiquibaseExtension {
 	 */
 	def runList
 
-	String mainClassName = 'liquibase.integration.commandline.Main'
+	LiquibaseExtension(NamedDomainObjectContainer<Activity> activities) {
+		this.activities = activities
+	}
 
-  LiquibaseExtension(NamedDomainObjectContainer<Activity> activities) {
-    this.activities = activities
-  }
-
-  def activities(Closure closure) {
-	  activities.configure(closure)
-  }
+	def activities(Closure closure) {
+		activities.configure(closure)
+	}
 }
