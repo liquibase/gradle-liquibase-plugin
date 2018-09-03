@@ -1,3 +1,8 @@
+Changes for 2.0.1
+=================
+- Updated the version of Groovy to 2.4.12 to remove the CVE-2016-6814
+  vulnerability
+
 Changes for 2.0.0
 =================
 - The plugin no longer has a transitive dependency on the Liquibase Groovy DSL.
