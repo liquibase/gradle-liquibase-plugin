@@ -67,6 +67,15 @@ class LiquibaseTask extends JavaExec {
 	 */
 	def runLiquibase(activity) {
 		def args = []
+
+		// custom liquibase tables need to specified before the command
+		if (activity.databaseChangeLogTableName) {
+			args += "-Dliquibase.databaseChangeLogTableName=${activity.databaseChangeLogTableName}"
+		}
+		if (activity.databaseChangeLogLockTableName) {
+			args += "-Dliquibase.databaseChangeLogLockTableName=${activity.databaseChangeLogLockTableName}"
+		}
+
 		// liquibase forces to add these arguments after the command...
 		def exclusions = ['excludeObjects','includeObjects']
 		activity.arguments.findAll( { !exclusions.contains(it.key) } ) .each {

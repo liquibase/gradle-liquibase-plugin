@@ -30,6 +30,15 @@ class Activity {
 	def arguments = [logLevel: 'info']
 	def parameters = [:]
 
+	/**
+	 * Defines a custom database changelog table to be used.
+	 */
+	String databaseChangeLogTableName
+	/**
+	 * Defines a custom database changelog lock table to be used.
+	 */
+	String databaseChangeLogLockTableName
+
 	Activity(String name) {
 		this.name = name
 	}
