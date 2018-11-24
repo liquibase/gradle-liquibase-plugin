@@ -1,3 +1,11 @@
+Changes for 2.0.2
+=================
+- Fixed the way the plugin handles System properties.  Liquibase will now 
+  inherit System properties from the parent JVM when it runs, so you can now
+  define System properties when you invoke Gradle, or in your build.gradle 
+  file, and Liquibase will use them.  This fixes a problem with overriding the 
+  change log table that Liquibase uses.
+  
 Changes for 2.0.1
 =================
 - Updated the version of Groovy to 2.4.12 to remove the CVE-2016-6814

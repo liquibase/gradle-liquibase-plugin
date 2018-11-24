@@ -23,11 +23,11 @@ apply plugin: 'idea'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.gradle.plugin-publish'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 // Release version that won't conflict with the bintray plugin
-def releaseVersion = '2.0.1'
+def releaseVersion = '2.0.2-SNAPSHOT'
 
 group = 'org.liquibase'
 archivesBaseName = 'liquibase-gradle-plugin'

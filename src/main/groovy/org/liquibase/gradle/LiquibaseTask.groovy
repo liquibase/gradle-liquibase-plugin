@@ -17,11 +17,9 @@
 
 package org.liquibase.gradle
 
-import org.gradle.api.logging.LogLevel
+
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
-
-import java.lang.reflect.Field
 
 /**
  * Gradle task that calls Liquibase to run a command.
@@ -124,6 +122,8 @@ class LiquibaseTask extends JavaExec {
 //		setSystemProperties(["mainClass": project.liquibase.mainClassName])
 //		setMain("org.liquibase.gradle.LiquibaseRunner")
 		setMain(project.liquibase.mainClassName)
+		// "inherit" the system properties from the Gradle JVM.
+		systemProperties System.properties
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
 		project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
 		super.exec()

@@ -7,6 +7,12 @@ Saliman.
 
 News
 ----
+### November 24, 2018
+Release 2.0.2 will fix a bug with the plugin's handling of System properties.
+All System properties that are in effect when Gradle runs Liquibase will now be
+seen by Liquibase.  Previously, System properties were not inherited by the 
+forked JVM that runs Liquibase.
+ 
 ### September 3, 2018
 Release 2.0.1 is a minor release that removes the CVE-2016-6814 vulnerability 
 by updating the Groovy dependency.
