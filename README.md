@@ -132,9 +132,11 @@ describes what each command does and what parameters each command uses.  If you
 want to prefix each task to avoid task name conflicts, set a value for the 
 `liquibaseTaskPrefix` property.  This will tell the liquibase plugin to 
 capitalize the task name and prefix it with the given prefix.  For example,
-if Gradle is invoked with `-PliquibaseTaskPrefix=liquibase`, or you put
-`liquibaseTaskPrefix=liquibase` in `gradle.properties` then this plugin will 
-create tasks named `liquibaseUpdate`, `liquibaseTag`, etc.
+if you put `liquibaseTaskPrefix=liquibase` in `gradle.properties`, then this 
+plugin will create tasks named `liquibaseUpdate`, `liquibaseTag`, etc.
+You could do the same thing by adding the `-PliquibaseTaskPrefix=liquibase` 
+argument when running Gradle, but using `gradle.properties` is probably a 
+better solution because all users would get the same tasks every time. 
 
 There are 3 basic parts to using the Liquibase Gradle Plugin.  Including the
 plugin, setting up the Liquibase runtime dependencies, and configuring the 
@@ -239,7 +241,8 @@ the name of the class to invoke in order to run Liquibase.  This value is
 optional and defaults to `liquibase.integration.commandline.Main`.  This value
 can be changed to call other classes instead, such as the plugin's own 
 `org.liquibase.gradle.OutputEnablingLiquibaseRunner` to fix a Liquibase 3.6
-logging issue.
+logging issue.  You will need to make sure that whatever class you use with 
+`mainClassName` needs to be included as a `liquibaseRuntime` dependency.
 
 Some things to keep in mind when setting up the `liquibase` block:
 
