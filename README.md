@@ -101,12 +101,12 @@ Usage
 -----
 The Liquibase plugin allows you to parse Liquibase changesets using any 
 Liquibase parser that is in the classpath when Liquibase runs.  Some parsers,
-such as the XML parser and the YAML parser, are part of Liquiabse itself, 
+such as the XML parser and the YAML parser, are part of Liquibase itself, 
 although some parsers require you to add additional dependencies to the 
 liquibase classpath.  For example, the YAML parser requires 
 `org.yaml:snakeyaml:1.15`.
 
-One of the best ways to parse Liquiabse changesets is with the Groovy DSL, 
+One of the best ways to parse Liquibase changesets is with the Groovy DSL, 
 which is a much nicer way to write changelogs, especially since Groovy is the 
 language of Gradle scripts themselves.  The Groovy DSL syntax intended to 
 mirror the Liquibase XML syntax directly, such that mapping elements and 
