@@ -263,7 +263,7 @@ Some things to keep in mind when setting up the `liquibase` block:
    Liquibase.  Any valid Liquibase command parameter is a legal method here.
    The command parameters are parameters in the Liquibase documentation that
    start with a `--` such as `--difftypes` or `--logLevel`.  For example, if
-   you wanted to increase the log level, you could add `logLevel debug` to the
+   you wanted to increase the log level, you could add `logLevel 'debug'` to the
    activity.  
 
 4. In addition to the command pass-through methods of an activity, there is a
@@ -297,7 +297,7 @@ Upgrading the version of Liquibase itself
 Most of the time, the new versions of Liquibase works the same as the old one,
 but sometimes the new versions have compatibility issues with existing change
 sets, as happened when Liquibase 3 was released.  When this happens, we 
-reccommend the following procedure to do the upgrade:
+recommend the following procedure to do the upgrade:
 
 1. Make sure all of your Liquibase managed databases are up to date by running
    `gradle update` on them *before upgrading to the new version of the
