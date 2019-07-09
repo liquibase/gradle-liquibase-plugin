@@ -297,7 +297,7 @@ Upgrading the version of Liquibase itself
 Most of the time, the new versions of Liquibase works the same as the old one,
 but sometimes the new versions have compatibility issues with existing change
 sets, as happened when Liquibase 3 was released.  When this happens, we 
-reccommend the following procedure to do the upgrade:
+recommend the following procedure to do the upgrade:
 
 1. Make sure all of your Liquibase managed databases are up to date by running
    `gradle update` on them *before upgrading to the new version of the
