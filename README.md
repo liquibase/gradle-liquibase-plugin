@@ -263,7 +263,7 @@ Some things to keep in mind when setting up the `liquibase` block:
    Liquibase.  Any valid Liquibase command parameter is a legal method here.
    The command parameters are parameters in the Liquibase documentation that
    start with a `--` such as `--difftypes` or `--logLevel`.  For example, if
-   you wanted to increase the log level, you could add `logLevel debug` to the
+   you wanted to increase the log level, you could add `logLevel 'debug'` to the
    activity.  
 
 4. In addition to the command pass-through methods of an activity, there is a
