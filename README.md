@@ -205,7 +205,7 @@ execution when there is no runList is not guaranteed.
 
 Let's suppose that for each deployment, you need to update the data model for
 your application's database, and you also need to run some SQL statements
-in a separate database used for security. Additionally, you want to 
+in a separate database used for security.  Additionally, you want to 
 occasionally run a diff between the changelog and the database.  The
  `liquibase` block might look like this:
 
