@@ -9,7 +9,7 @@ buildscript {
     mavenLocal()
   }
   dependencies {
-    classpath 'org.liquibase:liquibase-gradle-plugin:1.1.0'
+    classpath 'org.liquibase:liquibase-gradle-plugin:2.0.2-SNAPSHOT'
     classpath 'com.h2database:h2:1.3.159'
   }
 }

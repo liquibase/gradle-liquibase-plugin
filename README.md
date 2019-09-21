@@ -7,6 +7,26 @@ Saliman.
 
 News
 ----
+### September 21, 2019
+Liquibase released versions 3.7 and 3.8.  Neither of which require any changes
+from the Gradle plugin to work properly, but there are three issues with the
+newer Liquibase versions that could affect users of this plugin:
+
+1. Liquibase 3.7+ made a change that broke the Groovy DSL.  If you're using
+  the Groovy DSL for your change sets, you'll need to use version 2.1.0 of
+  the liquibase-groovy parser.
+
+2. Due to a bug in Liquibase ([CORE-3643](https://liquibase.jira.com/browse/CORE-3463)),
+  The Groovy DSL won't be able to parse the new validateXYZ attributes of a 
+  constraint.  There is a pull request to fix the issue.
+
+3. Liquibase 3.7 made more changes to the way it does logging which made the 
+  console output issues in [CORE-3220)](https://liquibase.jira.com/browse/CORE-3220)
+  even worse, and broke the proxy class I wrote to workaround the issue in 
+  Liquibase 3.6.  I've submitted a [Pull Request](https://github.com/liquibase/liquibase/pull/918)
+  to resolve the issue, but until Liquibase is built with the fix, console
+  output will be completely broken in version 3.7+
+ 
 ### November 24, 2018
 Release 2.0.2 will fix a bug with the plugin's handling of System properties.
 All System properties that are in effect when Gradle runs Liquibase will now be
