@@ -65,17 +65,31 @@ class LiquibaseTask extends JavaExec {
 	 */
 	def runLiquibase(activity) {
 		def args = []
-		// liquibase forces to add these arguments after the command...
-		def exclusions = ['excludeObjects','includeObjects']
-		activity.arguments.findAll( { !exclusions.contains(it.key) } ) .each {
+		// liquibase forces to add command params after the the command.  We
+		// This list is based off of the Liquibase code, and reflects the things
+		// That liquibase will explicitly look for in the command params.  Note
+		// That when liquibase process a command param, it still sets the
+		// appropriate Main class instance variable, so we don't need to worry
+		// too much about mapping params to commands.
+		def commandParams = [
+			'excludeObjects',
+			'includeObjects',
+			'schemas',
+			'snapshotFormat',
+			'sql',
+			'sqlFile',
+			'delimiter',
+			'rollbackScript'
+		]
+		activity.arguments.findAll( { !commandParams.contains(it.key) } ) .each {
 			args += "--${it.key}=${it.value}"
 		}
 
 		if ( command ) {
 			args += command
 		}
-		// ...add them now
-		activity.arguments.findAll( { exclusions.contains(it.key) } ) .each {
+		// Add the command parameters after the command.
+		activity.arguments.findAll( { commandParams.contains(it.key) } ) .each {
 			args += "--${it.key}=${it.value}"
 		}
 
