@@ -20,8 +20,7 @@ package org.liquibase.gradle
 import org.gradle.api.Project
 import org.gradle.api.Plugin
 
-class LiquibasePlugin
-		implements Plugin<Project> {
+class LiquibasePlugin implements Plugin<Project> {
 
 	public static final String LIQUIBASE_RUNTIME_CONFIGURATION = "liquibaseRuntime";
 

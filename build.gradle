@@ -11,53 +11,48 @@ buildscript {
   }
   dependencies {
     classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
-		classpath 'com.gradle.publish:plugin-publish-plugin:0.9.10'
+    classpath 'com.gradle.publish:plugin-publish-plugin:0.10.0'
   }
 }
 
-
+apply plugin: 'com.gradle.plugin-publish'
+apply plugin: 'java-gradle-plugin'
 apply plugin: 'groovy'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
 apply plugin: 'idea'
 apply plugin: 'com.jfrog.bintray'
-apply plugin: 'com.gradle.plugin-publish'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 // Release version that won't conflict with the bintray plugin
-def releaseVersion = '2.0.2-SNAPSHOT'
+def releaseVersion = '2.0.2'
 
 group = 'org.liquibase'
 archivesBaseName = 'liquibase-gradle-plugin'
 version = releaseVersion
-ext.isSnapshot = version.endsWith('SNAPSHOT')
+ext.isReleaseVersion = !version.endsWith('SNAPSHOT')
 
-if ( isSnapshot ) {
-  println 'using snapshot'
-  ext.mavenCentralUploadUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
-} else {
+if ( isReleaseVersion ) {
   println 'using staging'
   ext.mavenCentralUploadUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-}
-
-configurations {
-  archives
+} else {
+  println 'using snapshot'
+  ext.mavenCentralUploadUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
 }
 
 repositories {
-	jcenter()
+  jcenter()
   mavenLocal()
   mavenCentral()
 }
 
 dependencies {
-  compile 'org.codehaus.groovy:groovy:2.4.12'
-  compile gradleApi()
-  testCompile 'junit:junit:4.12'
-  archives 'org.apache.maven.wagon:wagon-ssh:2.8'
-  archives 'org.apache.maven.wagon:wagon-ssh-external:2.8'
+  implementation localGroovy()
+  implementation gradleApi()
+  implementation 'org.codehaus.groovy:groovy:2.4.12'
+  testImplementation 'junit:junit:4.12'
 }
 
 task sourceJar(type: Jar) {
@@ -66,161 +61,169 @@ task sourceJar(type: Jar) {
   from sourceSets.main.allSource
 }
 
-
 task groovydocJar(type: Jar, dependsOn: groovydoc) {
   description = 'An archive of the GroovyDocs for Maven Central'
   classifier = 'javadoc'
   from groovydoc
 }
 
-artifacts {
-  archives jar, groovydocJar, sourceJar
-}
-
-signing {
-  sign configurations.archives
-}
-
-// Only *Require* signing if we are uploading a non snapshot version.  If we
-// do need to sign, make sure we've got the properties we need to do the
-// signing.
-import org.gradle.plugins.signing.Sign
-gradle.taskGraph.whenReady { taskGraph ->
-  tasks.withType(org.gradle.plugins.signing.Sign).all {
-    required = taskGraph.hasTask(':uploadArchives') && !isSnapshot
-	  if ( required ) {
-	    // Use Java's console to read from the console (no good for a CI
-	    // environment)
-	    Console console = System.console()
-	    console.printf '\n\nWe have to sign some things in this build...\n\n'
-
-      if ( !project.hasProperty('signing.keyId') ) {
-        def id = console.readLine('PGP Public Key Id: ')
-        allprojects { ext.'signing.keyId' = id }
-      }
-
-	    if ( !project.hasProperty('signing.secretKeyRingFile') ) {
-	      def file = console.readLine('PGP Secret Key Ring File (absolute path): ')
-	      allprojects { ext.'signing.secretKeyRingFile' = file }
-	    }
-
-		  if ( !project.hasProperty('signing.password') ) {
-			  def password = console.readPassword('PGP Private Key Password: ')
-			  allprojects { ext.'signing.password' = password }
-	    }
-
-		  console.printf '\nThanks.\n\n'
-	  }
-  }
-}
-
-uploadArchives {
-  // We can't use taskGraph.whenReady because it doesn't resolve until after
-  // configuration.  The startParameter is not as good, but it probably
-  // good enough for our purposes.
-  if ( gradle.startParameter.taskNames.contains('uploadArchives') ) {
-    // Use Java's console to read from the console (no good for a CI
-    // environment)
-    Console console = System.console()
-    console.printf '\n\nWe have to upload some things in this build...\n\n'
-
-    if ( !project.hasProperty('mavenCentralUsername') ) {
-      def mavenCentralUsername = console.readLine('Maven Central Username: ')
-      allprojects { ext.'mavenCentralUsername' = mavenCentralUsername }
-    }
-
-    if ( !project.hasProperty('mavenCentralPassword') ) {
-      def mavenCentralPassword = console.readLine('Maven Central Password: ')
-      allprojects { ext.'mavenCentralPassword' = mavenCentralPassword }
-    }
-
-    repositories {
-      mavenDeployer {
-        if ( signing.signatory ) {
-          beforeDeployment { signing.signPom(it) }
-        }
-        configuration = configurations.archives
-        //repository(url: 'file://$buildDir/m2repo')
-        repository(url: mavenCentralUploadUrl) {
-          authentication(userName: mavenCentralUsername,
-                  password: mavenCentralPassword)
-          releases(updatePolicy: 'always')
-          snapshots(updatePolicy: 'always')
-        }
-        pom.project(pomConfiguration)
-      }
-    }
-  }
-}
-
-def getPomConfiguration() {
-  return {
-    name('Gradle Liquibase Plugin')
-    packaging 'jar'
-    description('A Gradle plugin for the Liquibase database refactoring tool.')
-    url('https://github.com/liquibase/liquibase-gradle-plugin')
-    licenses {
-      license {
-        name 'The Apache Software License, Version 2.0'
-        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-        distribution 'repo'
-      }
-    }
-    developers {
-	    developer {
-		    id 'stevesaliman'
-		    name 'Steven C. Saliman'
-		    email 'support@saliman.net'
-	    }
-    }
-    scm {
-      connection('scm:https://liquibase@github.com/liquibase/liquibase-gradle-plugin')
-      developerConnection('scm:git@github.com:liquibase/liquibase-gradle-plugin.git')
-      url('https://github.com/liquibase/liquibase-gradle-plugin')
-    }
-  }
-}
-
-// configuration for publishing to bintray with the jfrog plugin
-bintray {
-  user = project.hasProperty('bintrayUsername') ? project.getProperty('bintrayUsername') : ''
-  key = project.hasProperty('bintrayApiKey') ? project.getProperty('bintrayApiKey') : ''
-
-  configurations = [ 'archives' ]
-
-  pkg {
-    // repo = 'gradle-plugins'
-    repo = 'maven'
-    name = 'liquibase-gradle-plugin'
-    desc = 'A Gradle plugin for running the Liquibase database upgrade tool.'
-    licenses = [ 'Apache-2.0' ]
-    websiteUrl = 'https://github.com/liquibase/liquibase-gradle-plugin'
-    issueTrackerUrl = 'https://github.com/liquibase/liquibase-gradle-plugin/issues'
-    vcsUrl = 'https://github.com/liquibase/liquibase-gradle-plugin.git'
-    labels = [ 'gradle', 'liquibase', 'database' ]
-    publicDownloadNumbers = true
-    version {
-      // name = version
-      // vcsTag = version
-      vcsTag = "Release_${releaseVersion}"
-      attributes = [
-              'gradle-plugin': 'org.liquibase.gradle:org.liquibase:liquibase-gradle-plugin'
-      ]
-    }
-  }
+// Configure the java-gradle-plugin.  Note that the ID must match it's Gradle
+// Plugin Portal id.  This will screw up Maven publishing, but we'll fix that
+// later.
+gradlePlugin {
+	plugins {
+		liquibasePlugin {
+			id = 'org.liquibase.gradle'
+			displayName = 'Gradle Liquibase Plugin'
+			description = 'A Gradle plugin for running the Liquibase database upgrade tool.'
+			implementationClass = 'org.liquibase.gradle.LiquibasePlugin'
+		}
+	}
 }
 
 // configuration for publishing to the Gradle plugins portal
 pluginBundle {
-  website = 'https://github.com/liquibase/liquibase-gradle-plugin'
+	website = 'https://github.com/liquibase/liquibase-gradle-plugin'
 	vcsUrl = 'https://github.com/liquibase/liquibase-gradle-plugin.git'
 	description = 'A Gradle plugin for running the Liquibase database upgrade tool.'
 	tags = [ 'gradle', 'liquibase', 'database' ]
+}
 
-	plugins {
-		gradleLiquibasePlugin {
-			id = 'org.liquibase.gradle'
-			displayName = 'Gradle Liquibase plugin'
+// Configure the maven-publish plugin
+publishing {
+	publications {
+		liquibasePlugin(MavenPublication) {
+			from components.java
+			artifact groovydocJar
+			artifact sourceJar
+			pom {
+				name = 'Gradle Liquibase Plugin'
+				description = 'A Gradle plugin for running the Liquibase database upgrade tool.'
+				url = 'https://github.com/liquibase/liquibase-gradle-plugin'
+				packaging = 'jar'
+				licenses {
+					license {
+						name = 'The Apache Software License, Version 2.0'
+						url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+					}
+				}
+				developers {
+					developer {
+						id = 'stevesaliman'
+						name = 'Steven C. Saliman'
+						email = 'support@saliman.net'
+					}
+				}
+				scm {
+					connection = 'scm:https://liquibase@github.com/liquibase/liquibase-gradle-plugin'
+					developerConnection = 'scm:git@github.com:liquibase/liquibase-gradle-plugin.git'
+					url = 'https://github.com/liquibase/liquibase-gradle-plugin'
+				}
+			}
+
 		}
+	}
+
+	repositories {
+		maven {
+			url = mavenCentralUploadUrl
+			// We only need to mess with credentials if we're publishing...
+			if ( gradle.startParameter.taskNames.contains("publish") ) {
+				// Use Java's console to read from the console (no good for a CI
+				// environment)
+				def console = System.console()
+				console.printf "\n\nWe have to upload some things in this build...\n\n"
+
+				if ( !project.hasProperty('mavenCentralUsername') ) {
+					def mavenCentralUsername = console.readLine("Maven Central Username: ")
+					allprojects { ext."mavenCentralUsername" = mavenCentralUsername }
+				}
+
+				if ( !project.hasProperty('mavenCentralPassword') ) {
+					def mavenCentralPassword = console.readLine("Maven Central Password: ")
+					allprojects { ext."mavenCentralPassword" = mavenCentralPassword }
+				}
+				credentials {
+					username mavenCentralUsername
+					password mavenCentralPassword
+				}
+			}
+		}
+	}
+}
+
+// Configure BinTray publishing
+bintray {
+	user = project.hasProperty('bintrayUsername') ? project.getProperty('bintrayUsername') : ''
+	key = project.hasProperty('bintrayApiKey') ? project.getProperty('bintrayApiKey') : ''
+
+	publications = [ 'liquibasePlugin' ]
+	publish = true
+
+	pkg {
+		// repo = 'gradle-plugins'
+		repo = 'maven'
+		name = 'liquibase-gradle-plugin'
+		desc = 'A Gradle plugin for running the Liquibase database upgrade tool.'
+		licenses = [ 'Apache-2.0' ]
+		websiteUrl = 'https://github.com/liquibase/liquibase-gradle-plugin'
+		issueTrackerUrl = 'https://github.com/liquibase/liquibase-gradle-plugin/issues'
+		vcsUrl = 'https://github.com/liquibase/liquibase-gradle-plugin.git'
+		labels = [ 'gradle', 'liquibase', 'database' ]
+		publicDownloadNumbers = true
+		version {
+			// name = version
+			// vcsTag = version
+			vcsTag = "Release_${releaseVersion}"
+			attributes = [
+				'gradle-plugin': 'org.liquibase.gradle:org.liquibase:liquibase-gradle-plugin'
+			]
+		}
+	}
+}
+
+signing {
+	sign publishing.publications.liquibasePlugin
+}
+
+// When we're ready to go, there are a couple of things we'll need to do before
+// we execute anything.
+gradle.taskGraph.whenReady { taskGraph ->
+	// This is a rather nasty little hack.  When we apply java-gradle-plugin,
+	// It creates some maven-publish tasks that conflict with the manual
+	// configuration - it tries to publish a org.liquibase.gradle artifact,
+	// which is wrong.  The quick and very dirty solution is to disable those
+	// tasks.
+	// Comment this to publish to Gradle and Bintray, Uncomment for Maven Central
+//	taskGraph.allTasks.findAll { it.name ==~ /.*MavenPublication.*/ }*.enabled = false
+
+	// Only *require* signing if we are uploading a release version.  If we do
+	// need to sign, make sure we've got the properties we need to do the signing.
+	if ( isReleaseVersion && taskGraph.hasTask(":publish") ) {
+		// Use Java's console to read from the console (no good for a CI
+		// environment)
+		def console = System.console()
+		console.printf "\n\nWe have to sign some things in this build...\n\n"
+
+		if ( !project.hasProperty('signing.keyId') ) {
+			def id = console.readLine("PGP Public Key Id: ")
+			allprojects { ext."signing.keyId" = id }
+		}
+
+		if ( !project.hasProperty('signing.secretKeyRingFile') ) {
+			def file = console.readLine("PGP Secret Key Ring File (absolute path): ")
+			allprojects { ext."signing.secretKeyRingFile" = file }
+		}
+
+		if ( !project.hasProperty('signing.password') ) {
+			def password = console.readPassword("PGP Private Key Password: ")
+			allprojects { ext."signing.password" = password }
+		}
+
+		console.printf "\nThanks.\n\n"
+	} else {
+	    tasks.withType(org.gradle.plugins.signing.Sign).all {
+		    it.enabled = false
+	    }
 	}
 }

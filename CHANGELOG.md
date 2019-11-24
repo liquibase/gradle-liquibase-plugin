@@ -5,6 +5,12 @@ Changes for 2.0.2
   define System properties when you invoke Gradle, or in your build.gradle 
   file, and Liquibase will use them.  This fixes a problem with overriding the 
   change log table that Liquibase uses.
+
+- Fixed a bug that was preventing some command arguments from being processed
+  correctly by Liquibase.  Specifically, I improved the list of arguments that
+  need to come *after* the command (Issue #64).
+ 
+- Updated the Gradle Wrapper to use Gradle 6.
   
 Changes for 2.0.1
 =================

@@ -7,6 +7,21 @@ Saliman.
 
 News
 ----
+### November 24, 2019
+Release 2.0.2 of the plugin fixes an issue with some command parameters like the
+`snapshotFormat` parameter of the `snapshot` command, though it should be noted
+that Liquibase 3.8.1 appears to have broken json support for the snapshot 
+command.
+
+### November 23, 2019
+Liquibase released version 3.8.1, which appears to fix the `logLevel` bug in 
+[CORE-3220)](https://liquibase.jira.com/browse/CORE-3220).  It does not fix
+[CORE-3643](https://liquibase.jira.com/browse/CORE-3463), so validateXYZ 
+attributes of a constraint still won't work.
+
+Gradle has released version 6.0, and the Liquibase Gradle Plugin appears to 
+work just fine with it.
+
 ### September 21, 2019
 Liquibase released versions 3.7 and 3.8.  Neither of which require any changes
 from the Gradle plugin to work properly, but there are three issues with the
@@ -102,21 +117,6 @@ several other changes that are worth noting:
    `liquibase` block in `build.gradle`.  This won't fix the problem with the 
    logLevel argument, but you will at least be able to see output.
 
-### March 5, 2017
-Version 1.2.4 is a minor release that fixes a bug with the excludeObjects and
-includeObjects options.
-
-### February 25, 2017
-The previous release of this plugin had a broken dependency.  Version 1.2.3 
-fixes this issue.  Please do not use version 1.2.2.
-
-### February 20, 2017
-The plugin has been updated to use the latest Groovy DSL, and I've worked 
-around a Liquibase argument parsing bug.
-
-### November 30, 2015
-The plugin has been updated to support Liquibase 3.4.2.
-
 Usage
 -----
 The Liquibase plugin allows you to parse Liquibase changesets using any 
@@ -168,7 +168,7 @@ build.gradle file:
 
 ```groovy
 plugins {
-  id 'org.liquibase.gradle' version '2.0.1'
+  id 'org.liquibase.gradle' version '2.0.2'
 }
 ```
 
@@ -180,7 +180,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.liquibase:liquibase-gradle-plugin:2.0.1"
+        classpath "org.liquibase:liquibase-gradle-plugin:2.0.2"
     }
 }
 apply plugin: 'org.liquibase.gradle'
@@ -200,7 +200,7 @@ An example of `liquibaseRuntime` entries is below:
 ```groovy
 dependencies {
   // All of your normal project dependencies would be here in addition to...
-  liquibaseRuntime 'org.liquibase:liquibase-core:3.6.1'
+  liquibaseRuntime 'org.liquibase:liquibase-core:3.8.1'
   liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.0.1'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
 }
