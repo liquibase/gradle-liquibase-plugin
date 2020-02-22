@@ -17,7 +17,7 @@
 
 package org.liquibase.gradle
 
-
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
 
@@ -31,10 +31,12 @@ class LiquibaseTask extends JavaExec {
 	/**
 	 * The Liquibase command to run.
 	 */
+	@Input
 	def command
 	/**
 	 * Whether or not the command needs a value, such as "tag" or "rollbackCount"
 	 */
+	@Input
 	def requiresValue = false
 
 	@TaskAction
