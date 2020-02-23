@@ -199,12 +199,44 @@ An example of `liquibaseRuntime` entries is below:
 
 ```groovy
 dependencies {
-  // All of your normal project dependencies would be here in addition to...
   liquibaseRuntime 'org.liquibase:liquibase-core:3.8.1'
   liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.0.1'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
 }
 ```
+
+The `dependencies` block will contain many other dependencies to build and run
+your project, but those dependencies are not part of the classpath when 
+liquibase runs, because Liquibase typically only needs to be able to parse
+the change logs and connect to the database, and I didn't want to clutter up
+the classpath with dependencies that weren't needed.
+
+Users of the liquibase-hibernate module who need to run the Hibernate diff
+command, or generate a changelog from Entity classes will need some extra 
+configuration.  You'll need to add something like the following to your
+
+`liquibaseRuntime` dependencies:
+```groovy
+  liquibaseRuntime 'org.liquibase.ext:liquibase-hibernate5:3.6' 
+  liquibaseRuntime sourceSets.main.output
+```
+
+Adding `sourceSets.main.output` is necessary for Hibernate to find your entity
+classes.
+
+If you have a lot of dependencies from your project that you need to have in
+the liquibase classpath, you could also make `liquibaseRuntime` extend another
+configuration like this:
+
+```groovy
+configurations {
+  liquibaseRuntime.extendsFrom runtime
+}
+```
+
+Or, if you don't already have a `configurations` block, you can simply add
+`configurations.liquibaseRuntime.extendsFrom configurations.runtime` to your
+build.gradle file.
 
 #### 3. Configuring the plugin
 
