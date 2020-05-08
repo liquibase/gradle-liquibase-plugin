@@ -51,7 +51,7 @@ repositories {
 dependencies {
   implementation localGroovy()
   implementation gradleApi()
-  implementation 'org.codehaus.groovy:groovy:2.4.12'
+//  implementation 'org.codehaus.groovy:groovy:2.4.12'
   testImplementation 'junit:junit:4.12'
 }
 
