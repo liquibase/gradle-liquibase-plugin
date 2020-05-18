@@ -17,6 +17,7 @@
 
 package org.liquibase.gradle
 
+import org.gradle.api.Task
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
@@ -137,11 +138,18 @@ class LiquibaseTask extends JavaExec {
 //		configureLogging(classpath, project.liquibase.mainClassName)
 //		setSystemProperties(["mainClass": project.liquibase.mainClassName])
 //		setMain("org.liquibase.gradle.LiquibaseRunner")
-		setMain(project.liquibase.mainClassName)
 		// "inherit" the system properties from the Gradle JVM.
 		systemProperties System.properties
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
 		project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
 		super.exec()
+	}
+
+	@Override
+	Task configure(Closure closure) {
+		conventionMapping("main") {
+			project.extensions.findByType(LiquibaseExtension.class).mainClassName
+		}
+		return super.configure(closure)
 	}
 }
