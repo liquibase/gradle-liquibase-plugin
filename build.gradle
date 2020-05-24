@@ -27,7 +27,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 // Release version that won't conflict with the bintray plugin
-def releaseVersion = '2.0.3-SNAPSHOT'
+def releaseVersion = '2.0.3'
 
 group = 'org.liquibase'
 archivesBaseName = 'liquibase-gradle-plugin'

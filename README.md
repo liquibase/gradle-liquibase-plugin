@@ -2,11 +2,16 @@ Liquibase Gradle Plugin
 -----------------------
 A plugin for [Gradle](http://gradle.org) that allows you to use 
 [Liquibase](http://liquibase.org) to manage your database upgrades.  This 
-project was created by Tim Berglund, and is currently maintained by Steve 
-Saliman.
+project was originally created by Tim Berglund, and is currently maintained by
+Steve Saliman.
 
 News
 ----
+### May 24, 2020
+Release 2.0.3 is a minor release that fixes an issue caused by changes made in
+Gradle 6.4.  These changes were tested with Gradle 5.4, and are backwards 
+compatible at least that far back.
+
 ### November 24, 2019
 Release 2.0.2 of the plugin fixes an issue with some command parameters like the
 `snapshotFormat` parameter of the `snapshot` command, though it should be noted
@@ -168,7 +173,7 @@ build.gradle file:
 
 ```groovy
 plugins {
-  id 'org.liquibase.gradle' version '2.0.2'
+  id 'org.liquibase.gradle' version '2.0.3'
 }
 ```
 
@@ -180,7 +185,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.liquibase:liquibase-gradle-plugin:2.0.2"
+        classpath "org.liquibase:liquibase-gradle-plugin:2.0.3"
     }
 }
 apply plugin: 'org.liquibase.gradle'
@@ -200,7 +205,7 @@ An example of `liquibaseRuntime` entries is below:
 ```groovy
 dependencies {
   liquibaseRuntime 'org.liquibase:liquibase-core:3.8.1'
-  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.0.1'
+  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.1.1'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
 }
 ```

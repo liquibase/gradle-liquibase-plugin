@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2020 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class LiquibaseExtension {
 	final NamedDomainObjectContainer<Activity> activities
 
 	/**
-	 * Define the name of the Main class in Liquibase that the plucin should
+	 * Define the name of the Main class in Liquibase that the plugin should
 	 * call to run Liquibase itself.
 	 */
 	def mainClassName = 'liquibase.integration.commandline.Main'

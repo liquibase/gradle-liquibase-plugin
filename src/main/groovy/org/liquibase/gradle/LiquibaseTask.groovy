@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2020 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,12 +135,10 @@ class LiquibaseTask extends JavaExec {
 			throw new RuntimeException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
 		}
 		setClasspath(classpath)
-//		configureLogging(classpath, project.liquibase.mainClassName)
-//		setSystemProperties(["mainClass": project.liquibase.mainClassName])
-//		setMain("org.liquibase.gradle.LiquibaseRunner")
 		// "inherit" the system properties from the Gradle JVM.
 		systemProperties System.properties
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
+		project.logger.debug("liquibase-plugin: The ${getMain()} class will be used to run Liquibase")
 		project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
 		super.exec()
 	}

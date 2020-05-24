@@ -1,3 +1,10 @@
+Changes for 2.0.3
+=================
+- Fixed a problem caused by changes in Gradle 6.4 (Issue #70), with thanks to
+  Patrick Haun (@bomgar). 
+  
+- Fixed a deprecation warning that started showing up in Gradle 6.0.
+  
 Changes for 2.0.2
 =================
 - Fixed the way the plugin handles System properties.  Liquibase will now 
