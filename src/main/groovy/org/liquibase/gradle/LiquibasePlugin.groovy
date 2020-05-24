@@ -102,7 +102,7 @@ class LiquibasePlugin implements Plugin<Project> {
 				'futureRollbackCountSQL': 'Writes SQL to roll back <liquibaseCommandValue> changes the database after the changes in the changelog have been applied.',
 				'tag': 'Tags the current database state with <liquibaseCommandValue> for future rollback.',
 				'tagExists': 'Checks whether the tag given in <liquibaseCommandValue> is already existing.',
-			'executeSql': 'Executes SQL in the database given in <liquibaseCommandValue> in this format: -PliquibaseCommandValue="--sql=select 1" or -PliquibaseCommandValue="--sqlFile=myfile.sql"',
+				'executeSql': 'Executes SQL in the database given in <liquibaseCommandValue> in this format: -PliquibaseCommandValue="--sql=select 1" or -PliquibaseCommandValue="--sqlFile=myfile.sql"',
 				'calculateCheckSum': 'Calculates and prints a checksum for the <liquibaseCommandValue> changeset with the given id in the format filepath::id::author.',
 				'dbDoc': 'Generates Javadoc-like documentation based on current database and change log to the <liquibaseCommandValue> directory.'
 		].each { taskName, taskDescription ->
