@@ -139,10 +139,20 @@ class LiquibaseTask extends JavaExec {
 		systemProperties System.properties
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
 		project.logger.debug("liquibase-plugin: The ${getMain()} class will be used to run Liquibase")
+		project.logger.debug("liquibase-plugin: Liquibase will be run with the following jvmArgs: ${project.liquibase.jvmArgs}")
+		setJvmArgs(project.liquibase.jvmArgs)
 		project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
 		super.exec()
 	}
 
+	/**
+	 * Watch for changes to the extension's mainClassName and make sure the
+	 * task's main class is set correctly.  This method was created because
+	 * Gradle 6.4 made changes to the main class preventing us from calling
+	 * setMain during the execution phase.
+	 * @param closure
+	 * @return
+	 */
 	@Override
 	Task configure(Closure closure) {
 		conventionMapping("main") {

@@ -36,6 +36,9 @@ class LiquibaseExtension {
 	 * call to run Liquibase itself.
 	 */
 	def mainClassName = 'liquibase.integration.commandline.Main'
+
+	def jvmArgs = []
+
 	/**
 	 * Define the list of activities that run for each liquibase task.  This
 	 * is a string of comma separated activity names.  This is a string instead
