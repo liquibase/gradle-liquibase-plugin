@@ -37,6 +37,10 @@ class LiquibaseExtension {
 	 */
 	def mainClassName = 'liquibase.integration.commandline.Main'
 
+	/**
+	 * Define the JVM arguments to use when running Liquibase.  This defaults
+	 * to an empty array, which is almost always what you want.
+	 */
 	def jvmArgs = []
 
 	/**

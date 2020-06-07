@@ -1,3 +1,11 @@
+Changes for 2.0.4
+=================
+- Added a `jvmArgs` property to the extension object to fix an issue when 
+  debugging in Idea.  This fixes #72.
+  
+- Re-added the Groovy dependency so that the OutputEnablingLiquibaseRunner 
+  works (Issue #74)
+  
 Changes for 2.0.3
 =================
 - Fixed a problem caused by changes in Gradle 6.4 (Issue #70), with thanks to

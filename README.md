@@ -7,6 +7,11 @@ Steve Saliman.
 
 News
 ----
+### June 6, 2020
+Release 2.0.4 is a minor release that fixes an issue that was preventing 
+debugging in IntelliJ Idea (#72), and an issue with Groovy dependencies (Issue
+#74).
+
 ### May 24, 2020
 Release 2.0.3 is a minor release that fixes an issue caused by changes made in
 Gradle 6.4.  These changes were tested with Gradle 5.4, and are backwards 
@@ -118,9 +123,9 @@ several other changes that are worth noting:
    ([CORE-3220)](https://liquibase.jira.com/browse/CORE-3220)), but until it
    gets fixed, you can use a Proxy class in the plugin to enable console output.
    To use the proxy, simply add
-   `mainClassName 'org.liquibase.gradle.OutputEnablingLiquibaseRunner'` to your 
-   `liquibase` block in `build.gradle`.  This won't fix the problem with the 
-   logLevel argument, but you will at least be able to see output.
+   `mainClassName = 'org.liquibase.gradle.OutputEnablingLiquibaseRunner'` to
+   your `liquibase` block in `build.gradle`.  This won't fix the problem with
+   the logLevel argument, but you will at least be able to see output.
 
 Usage
 -----
@@ -293,13 +298,18 @@ liquibase {
 }
 ```
 
-The `liquibase` block can also contain a `mainClassName` which tells the plugin
-the name of the class to invoke in order to run Liquibase.  This value is 
-optional and defaults to `liquibase.integration.commandline.Main`.  This value
-can be changed to call other classes instead, such as the plugin's own 
-`org.liquibase.gradle.OutputEnablingLiquibaseRunner` to fix a Liquibase 3.6
+The `liquibase` block can also set two properties; `mainClassName` and `jvmArgs`.
+
+The `mainClassName` property tells the plugin the name of the class to invoke in
+order to run Liquibase.  This value is optional and defaults to
+`liquibase.integration.commandline.Main`.  This value can be changed to call 
+other classes instead, such as the plugin's own 
+`org.liquibase.gradle.OutputEnablingLiquibaseRunner` which fixes a Liquibase 3.6
 logging issue.  You will need to make sure that whatever class you use with 
-`mainClassName` needs to be included as a `liquibaseRuntime` dependency.
+`mainClassName` is included as a `liquibaseRuntime` dependency.
+
+The `jvmArgs` property tells the plugin what JVM arguments to set when forking
+the Liquibase process, and defaults to an empty array, which is usually fine.
 
 Some things to keep in mind when setting up the `liquibase` block:
 
