@@ -221,10 +221,21 @@ liquibase runs, because Liquibase typically only needs to be able to parse
 the change logs and connect to the database, and I didn't want to clutter up
 the classpath with dependencies that weren't needed.
 
+Using this plugin with Java 9+ and XML based change sets will need to add JAXB
+th classpath since JAXB was removed from the core JVM.  This can be done by
+adding the following to your `liquibaseRuntime` dependencies:
+```groovy
+  liquibaseRuntime group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
+``` 
+
+Some users have reported issues with logback and needed to add the following:
+```groovy
+  liquibaseRuntime("ch.qos.logback:logback-core:1.2.3")
+  liquibaseRuntime("ch.qos.logback:logback-classic:1.2.3")
+```
 Users of the liquibase-hibernate module who need to run the Hibernate diff
 command, or generate a changelog from Entity classes will need some extra 
 configuration.  You'll need to add something like the following to your
-
 `liquibaseRuntime` dependencies:
 ```groovy
   liquibaseRuntime 'org.liquibase.ext:liquibase-hibernate5:3.6' 
