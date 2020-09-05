@@ -7,6 +7,10 @@ Steve Saliman.
 
 News
 ----
+### September 5, 2020
+Liquibase 4.0.0 is out, and the initial testing shows that it is compatible with
+the Liquibase Gradle plugin.
+ 
 ### June 6, 2020
 Release 2.0.4 is a minor release that fixes an issue that was preventing 
 debugging in IntelliJ Idea (#72), and an issue with Groovy dependencies (Issue
