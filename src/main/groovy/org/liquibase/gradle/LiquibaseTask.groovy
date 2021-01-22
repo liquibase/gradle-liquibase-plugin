@@ -40,12 +40,18 @@ class LiquibaseTask extends JavaExec {
 	@Input
 	def requiresValue = false
 
+	@Input
+	def useDefaultParentProperties = true
+
+	@Input
+	def runList = ''
+
 	@TaskAction
 	@Override
 	public void exec() {
 
 		def activities = project.liquibase.activities
-		def runList = project.liquibase.runList
+		def runList = this.runList? this.runList: project.liquibase.runList
 
 		if ( runList != null && runList.trim().size() > 0 ) {
 			runList.split(',').each { activityName ->
@@ -136,7 +142,10 @@ class LiquibaseTask extends JavaExec {
 		}
 		setClasspath(classpath)
 		// "inherit" the system properties from the Gradle JVM.
-		systemProperties System.properties
+		// This line has been a problem when call liquibase project is not in root project
+		if (useDefaultParentProperties) {
+			systemProperties System.properties
+		}
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
 		project.logger.debug("liquibase-plugin: The ${getMain()} class will be used to run Liquibase")
 		project.logger.debug("liquibase-plugin: Liquibase will be run with the following jvmArgs: ${project.liquibase.jvmArgs}")
