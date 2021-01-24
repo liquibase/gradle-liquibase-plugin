@@ -1,3 +1,8 @@
+Changes for 2.0.5
+=================
+- The plugin will now throw an exception when there are no activities defined,
+  which would happen if users forget to configure the plugin.
+  
 Changes for 2.0.4
 =================
 - Added a `jvmArgs` property to the extension object to fix an issue when 

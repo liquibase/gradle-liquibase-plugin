@@ -17,6 +17,7 @@
 
 package org.liquibase.gradle
 
+import org.gradle.api.GradleException
 import org.gradle.api.Task
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
@@ -47,12 +48,16 @@ class LiquibaseTask extends JavaExec {
 		def activities = project.liquibase.activities
 		def runList = project.liquibase.runList
 
+		if ( activities == null || activities.size() == 0 ) {
+			throw new LiquibaseConfigurationException("No activities defined.  Did you forget to add a 'liquibase' block to your build.gradle file?")
+		}
+
 		if ( runList != null && runList.trim().size() > 0 ) {
 			runList.split(',').each { activityName ->
 				activityName = activityName.trim()
 				def activity = activities.find { it.name == activityName }
 				if ( activity == null ) {
-					throw new RuntimeException("No activity named '${activityName}' is defined the liquibase configuration")
+					throw new LiquibaseConfigurationException("No activity named '${activityName}' is defined the liquibase configuration")
 				}
 				runLiquibase(activity)
 			}
@@ -106,7 +111,7 @@ class LiquibaseTask extends JavaExec {
 		}
 
 		if ( !value && requiresValue ) {
-			throw new RuntimeException("The Liquibase '${command}' command requires a value")
+			throw new LiquibaseConfigurationException("The Liquibase '${command}' command requires a value")
 		}
 
 		// Unfortunately, due to a bug in liquibase itself
@@ -132,7 +137,7 @@ class LiquibaseTask extends JavaExec {
 
 		def classpath = project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION)
 		if ( classpath == null || classpath.isEmpty() ) {
-			throw new RuntimeException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
+			throw new LiquibaseConfigurationException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
 		}
 		setClasspath(classpath)
 		// "inherit" the system properties from the Gradle JVM.
