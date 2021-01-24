@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2020 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2021 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,7 @@ class LiquibasePlugin implements Plugin<Project> {
 				'dbDoc': 'Generates Javadoc-like documentation based on current database and change log to the <liquibaseCommandValue> directory.',
 				'executeSql': 'Executes SQL in the database given in <liquibaseCommandValue> in this format: -PliquibaseCommandValue="--sql=select 1" or -PliquibaseCommandValue="--sqlFile=myfile.sql"',
 				'futureRollbackCountSQL': 'Writes SQL to roll back <liquibaseCommandValue> changes the database after the changes in the changelog have been applied.',
+				'futureRollbackFromTagSQL': 'Writes (to standard out) the SQL to roll back the database to its current state after the changes up to the <liquibaseCommandValue> tag have been	applied',
 				'rollback': 'Rolls back the database to the state it was in when the <liquibaseCommandValue> tag was applied.',
 				'rollbackCount': 'Rolls back the last <liquibaseCommandValue> change sets.',
 				'rollbackCountSQL': 'Writes SQL to roll back the last <liquibaseCommandValue> change sets to STDOUT.',
