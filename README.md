@@ -7,6 +7,10 @@ Steve Saliman.
 
 News
 ----
+### March 6, 2021
+Liquibase version 4.3.0 has a bug that causes the gradle plugin to break.  This appears to be fixed
+in Liquibase 4.3.1.
+
 ### September 5, 2020
 Liquibase 4.0.0 is out, and the initial testing shows that it is compatible with
 the Liquibase Gradle plugin.
