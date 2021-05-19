@@ -46,6 +46,9 @@ class LiquibaseTask extends JavaExec {
 	@Input
 	def runList = ''
 
+	@Input
+	def value = ''
+
 	@TaskAction
 	@Override
 	public void exec() {
@@ -104,6 +107,10 @@ class LiquibaseTask extends JavaExec {
 
 
 		def value = project.properties.get("liquibaseCommandValue")
+
+		if ( !value && this.value != '') {
+			value = this.value
+		}
 
 		// Special case for the dbDoc command.  This is the only command that
 		// has a default value in the plugin.
