@@ -2,6 +2,11 @@ Changes for 2.0.5
 =================
 - The plugin will now throw an exception when there are no activities defined,
   which would happen if users forget to configure the plugin.
+
+- The plugin now uses Gradle's task configuration avoidance API.  Fixes #87.
+
+- The plugin now supports Liquibase 4.4.x and 4.5.x.  Fixes #89 and #92, though
+  there is some custom configuration required.
   
 Changes for 2.0.4
 =================

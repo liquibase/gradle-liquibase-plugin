@@ -7,9 +7,21 @@ Steve Saliman.
 
 News
 ----
+### October 31, 2021
+Release 2.0.5 adds support for Liquibase 4.4.0 and 4.4.5. Liquibase 4.4.0 made
+extensive changes to the way it processes command line arguments.  To use the 
+Gradle plugin with it, you will need to do two things;
+1. Liquibase 4.4.0 and above uses the picocli library to parse options, but for
+  some reason that library isn't a transitive dependency of Liquibase itself, 
+  so you'll have to add the `liquibaseRuntime 'info.picocli:picocli:4.6.1'` 
+  dependency to your build.gradle file.
+2. Add `mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'`
+  to the liquibase block of your build.gradle file to use the right command
+  line parser.
+ 
 ### March 6, 2021
-Liquibase version 4.3.0 has a bug that causes the gradle plugin to break.  This appears to be fixed
-in Liquibase 4.3.1.
+Liquibase version 4.3.0 has a bug that causes the gradle plugin to break.  This
+appears to be fixed in Liquibase 4.3.1.
 
 ### September 5, 2020
 Liquibase 4.0.0 is out, and the initial testing shows that it is compatible with
