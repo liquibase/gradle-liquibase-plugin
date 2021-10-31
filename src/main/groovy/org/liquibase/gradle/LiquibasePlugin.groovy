@@ -22,7 +22,7 @@ import org.gradle.api.Plugin
 
 class LiquibasePlugin implements Plugin<Project> {
 
-	public static final String LIQUIBASE_RUNTIME_CONFIGURATION = "liquibaseRuntime";
+	public static final String LIQUIBASE_RUNTIME_CONFIGURATION = "liquibaseRuntime"
 
 	void apply(Project project) {
 		applyExtension(project)
@@ -106,7 +106,7 @@ class LiquibasePlugin implements Plugin<Project> {
 				'rollbackCount': 'Rollback the last <liquibaseCommandValue> changes.',
 				'rollbackCountSQL': 'Write SQL to roll back the last <liquibaseCommandValue> changes.',
 				'rollbackOneChangeSet': 'Roll back the specific <liquibaseCommandValue> changeset, without rolling back changesets deployed before or afterwards. (Liquibase Pro key required)',
-				'rollbackOneChangeSetSql': 'Write SQL to roll back the specific <liquibaseCommandValue> changeset, without rolling back changesets deployed before or afterwards. (Liquibase Pro key required)',
+				'rollbackOneChangeSetSQL': 'Write SQL to roll back the specific <liquibaseCommandValue> changeset, without rolling back changesets deployed before or afterwards. (Liquibase Pro key required)',
                 'rollbackSQL': 'Write SQL to roll back the database to the state it was in when the <liquibaseCommandValue> tag was applied.',
 				'rollbackToDate': 'Rollback changes made to the database since the <liquibaseCommandValue> date/time.',
 				'rollbackToDateSQL': 'Write SQL to rollback changes made to the database since the <liquibaseCommandValue> date/time.',

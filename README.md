@@ -8,16 +8,15 @@ Steve Saliman.
 News
 ----
 ### October 31, 2021
-Release 2.0.5 adds support for Liquibase 4.4.0 and 4.4.5. Liquibase 4.4.0 made
-extensive changes to the way it processes command line arguments.  To use the 
-Gradle plugin with it, you will need to do two things;
-1. Liquibase 4.4.0 and above uses the picocli library to parse options, but for
-  some reason that library isn't a transitive dependency of Liquibase itself, 
-  so you'll have to add the `liquibaseRuntime 'info.picocli:picocli:4.6.1'` 
-  dependency to your build.gradle file.
-2. Add `mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'`
-  to the liquibase block of your build.gradle file to use the right command
-  line parser.
+Release 2.0.5 adds support for Liquibase 4.4.0 and 4.5.0. Liquibase 4.4.0 made
+extensive changes to the way it processes command line arguments.  Liquibase now
+uses the picocli library to parse options, but for some reason that library
+isn't a transitive dependency of Liquibase itself, so you'll have to add the
+`liquibaseRuntime 'info.picocli:picocli:4.6.1'` dependency to your build.gradle
+file.  
+
+In addition, if you set a mainClassName in the liquibase block of your
+build.gradle file, it will most likely fail in Liquibase 4.4+.
  
 ### March 6, 2021
 Liquibase version 4.3.0 has a bug that causes the gradle plugin to break.  This
@@ -332,12 +331,14 @@ liquibase {
 The `liquibase` block can also set two properties; `mainClassName` and `jvmArgs`.
 
 The `mainClassName` property tells the plugin the name of the class to invoke in
-order to run Liquibase.  This value is optional and defaults to
-`liquibase.integration.commandline.Main`.  This value can be changed to call 
-other classes instead, such as the plugin's own 
+order to run Liquibase.  By default, the plugin determines the version of 
+Liquibase being used and sets this value to either 
+`liquibase.integration.commandline.LiquibaseCommandLine` for version 4.4+, or
+`liquibase.integration.commandline.Main` for earlier versions.  This value can
+be set to call other classes instead, such as the plugin's own 
 `org.liquibase.gradle.OutputEnablingLiquibaseRunner` which fixes a Liquibase 3.6
-logging issue.  You will need to make sure that whatever class you use with 
-`mainClassName` is included as a `liquibaseRuntime` dependency.
+logging issue.  You will need to make sure whatever class you use with 
+`mainClassName` can be found in one of the `liquibaseRuntime` dependencies.
 
 The `jvmArgs` property tells the plugin what JVM arguments to set when forking
 the Liquibase process, and defaults to an empty array, which is usually fine.

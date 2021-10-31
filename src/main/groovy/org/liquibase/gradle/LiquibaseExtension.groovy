@@ -35,7 +35,7 @@ class LiquibaseExtension {
 	 * Define the name of the Main class in Liquibase that the plugin should
 	 * call to run Liquibase itself.
 	 */
-	def mainClassName = 'liquibase.integration.commandline.Main'
+	def mainClassName
 
 	/**
 	 * Define the JVM arguments to use when running Liquibase.  This defaults

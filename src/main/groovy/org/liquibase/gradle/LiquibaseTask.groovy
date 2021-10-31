@@ -140,6 +140,7 @@ class LiquibaseTask extends JavaExec {
 			throw new LiquibaseConfigurationException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
 		}
 		setClasspath(classpath)
+		fixMainClass(classpath)
 		// "inherit" the system properties from the Gradle JVM.
 		systemProperties System.properties
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
@@ -164,5 +165,79 @@ class LiquibaseTask extends JavaExec {
 			project.extensions.findByType(LiquibaseExtension.class).mainClassName
 		}
 		return super.configure(closure)
+	}
+
+	/**
+	 * Fix the main class to be used when running Liquibase.  Since we can't
+	 * call setMain directly in Gradle 6.4+, we had to register a listener that
+	 * watched for changes to the extension's "mainClassName" property.  But
+	 * if the user didn't set a value, we'll need to set one before we try to
+	 * run Liquibase so the property listener can set the class name correctly.
+	 * <p>
+	 * This method detects the version of Liquibase in the liquibaseRuntime
+	 * configuration and chooses the right default based on the version it finds.
+	 * <p>
+	 * If for some reason, it finds Liquibase in the classpath more than once,
+	 * the last one it finds, wins.
+	 *
+	 * @param classpath the classpath the task will use when running Liquibase.
+	 */
+	def fixMainClass(classpath) {
+		if (project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
+			project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
+			return
+		}
+
+		def foundVersion
+		classpath.allDependencies.each { dep ->
+			if ( dep.name == 'liquibase-core' ) {
+				project.logger.debug("liquibase-plugin: Found version ${dep.version} of liquibase-core.")
+				if ( foundVersion && foundVersion != dep.version ) {
+					project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
+				}
+				foundVersion = dep.version
+			}
+		}
+		if ( !foundVersion ) {
+			throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
+		}
+
+
+		if ( lbAtLeast(foundVersion, '4.4') ) {
+			project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
+			project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
+
+		} else {
+			project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.Main'
+			project.logger.debug("liquibase-plugin: Using the pre 4.4 command line parser.")
+		}
+
+	}
+
+	/**
+	 * Compare a given Liquibase semver to a target semver and return whether
+	 * the given semver is at least the version of the target.
+	 * @param givenSemver the version of Liquibase found in the classpath
+	 * @param targetSemver the target version to use as a comparison.
+	 * @return @{code true} if the given version is greater than or equal to
+	 * the target semver.
+	 */
+	def lbAtLeast(givenSemver, targetSemver) {
+		List givenVersions = givenSemver.tokenize('.')
+		List targetVersions = targetSemver.tokenize('.')
+
+		def commonIndices = Math.min(givenVersions.size(), targetVersions.size())
+
+		for (int i = 0; i < commonIndices; ++i) {
+			def givenNum = givenVersions[i].toInteger()
+			def targetNum = targetVersions[i].toInteger()
+
+			if (givenNum != targetNum) {
+				return givenNum > targetNum
+			}
+		}
+
+		// If we got this far then all the common indices are identical, so whichever version is longer must be more recent
+		return givenVersions.size() > targetVersions.size()
 	}
 }
