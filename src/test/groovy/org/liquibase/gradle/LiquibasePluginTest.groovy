@@ -19,9 +19,9 @@ class LiquibasePluginTest {
 	}
 
 	/**
-	 * Typically, a plugin is applied by name, but Gradle supports applying by
-	 * type.  Prove that it works.  We aren't going to go nuts here, just look
-	 * for one task that takes an argument, and one that doesn't
+	 * Typically, a plugin is applied by name, but Gradle supports applying by type.  Prove that it
+     * works.  We aren't going to go nuts here, just look for one task that takes an argument, and
+     * one that doesn't
 	 */
 	@Test
 	void applyPluginByType() {
@@ -42,8 +42,8 @@ class LiquibasePluginTest {
 	}
 
 	/**
-	 * Apply the plugin by name and make sure it creates tasks.  We don't go nuts
-	 * here, just look for a task that takes an argument, and one that doesn't
+	 * Apply the plugin by name and make sure it creates tasks.  We don't go nuts here, just look
+     * for a task that takes an argument, and one that doesn't
 	 */
 	@Test
 	void applyPluginByName() {
@@ -64,11 +64,10 @@ class LiquibasePluginTest {
 	}
 
 	/**
-	 * Apply the plugin by name, but this time, specify a value for the
-	 * liquibaseTaskPrefix and make sure it changes the task names accordingly.
-	 * We don't go nuts here, just look for a task that takes an argument, and
-	 * one that doesn't.  We also make sure that while the task names are changed,
-	 * the commands they run are not.
+	 * Apply the plugin by name, but this time, specify a value for the liquibaseTaskPrefix and make
+     * sure it changes the task names accordingly.  We don't go nuts here, just look for a task that
+     * takes an argument, and one that doesn't.  We also make sure that while the task names are
+     * changed, the commands they run are not.
 	 */
 	@Test
 	void applyPluginByNameWithPrefix() {
@@ -88,8 +87,8 @@ class LiquibasePluginTest {
 		assertTrue("update task should be enabled", task.enabled)
 		assertEquals("update task has the wrong command", "update", task.command)
 
-		// Make sure the standard tasks didn't get created, since we created them
-		// with different names.
+		// Make sure the standard tasks didn't get created, since we created them with different
+        // names.
 		task = project.tasks.findByName('tag')
 		assertNull("We shouldn't have a tag task", task)
 		task = project.tasks.findByName('update')

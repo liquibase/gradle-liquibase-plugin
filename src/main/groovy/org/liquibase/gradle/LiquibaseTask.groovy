@@ -1,18 +1,15 @@
 /*
  * Copyright 2011-2021 Tim Berglund and Steven C. Saliman
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied.  See the License for the specific language governing permissions and limitations
+ * under the License.
  */
 
 package org.liquibase.gradle
@@ -69,16 +66,16 @@ class LiquibaseTask extends JavaExec {
 
 	/**
 	 * Build the proper command line and call Liquibase.
+     *
 	 * @param activity the activity holding the Liquibase particulars.
 	 */
 	def runLiquibase(activity) {
 		def args = []
-		// liquibase forces to add command params after the the command.  We
-		// This list is based off of the Liquibase code, and reflects the things
-		// That liquibase will explicitly look for in the command params.  Note
-		// That when liquibase process a command param, it still sets the
-		// appropriate Main class instance variable, so we don't need to worry
-		// too much about mapping params to commands.
+		// liquibase forces to add command params after the the command.  We This list is based off
+        // of the Liquibase code, and reflects the things That liquibase will explicitly look for in
+        // the command params.  Note That when liquibase process a command param, it still sets the
+		// appropriate Main class instance variable, so we don't need to worry too much about
+        // mapping params to commands.
 		def commandParams = [
 			'excludeObjects',
 			'includeObjects',
@@ -104,8 +101,8 @@ class LiquibaseTask extends JavaExec {
 
 		def value = project.properties.get("liquibaseCommandValue")
 
-		// Special case for the dbDoc command.  This is the only command that
-		// has a default value in the plugin.
+		// Special case for the dbDoc command.  This is the only command that has a default value
+        // in the plugin.
 		if ( !value && command == "dbDoc" ) {
 			value = project.file("${project.buildDir}/database/docs")
 		}
@@ -115,19 +112,17 @@ class LiquibaseTask extends JavaExec {
 		}
 
 		// Unfortunately, due to a bug in liquibase itself
-		// (https://liquibase.jira.com/browse/CORE-2519), we need to put the
-		// -D arguments after the command but before the command argument.
-		// If we put them before the command, they are ignored, and if we
-		// put them after the command value, the --verbose value of the status
+		// (https://liquibase.jira.com/browse/CORE-2519), we need to put the -D arguments after the
+        // command but before the command argument.  If we put them before the command, they are
+        // ignored, and if we put them after the command value, the --verbose value of the status
 		// command will not be processed correctly.
 		activity.parameters.each {
 			args += "-D${it.key}=${it.value}"
 		}
 
-		// Because of Liquibase CORE-2519, a verbose status only works when
-		// --verbose is placed last.  Fortunately, this doesn't break the
-		// other commands, who appear to be able to handle -D options between
-		// the command and the value.
+		// Because of Liquibase CORE-2519, a verbose status only works when --verbose is placed
+        // last.  Fortunately, this doesn't break the other commands, who appear to be able to
+        // handle -D options between the command and the value.
 		if ( value ) {
 			args += value
 		}
@@ -152,10 +147,10 @@ class LiquibaseTask extends JavaExec {
 	}
 
 	/**
-	 * Watch for changes to the extension's mainClassName and make sure the
-	 * task's main class is set correctly.  This method was created because
-	 * Gradle 6.4 made changes to the main class preventing us from calling
-	 * setMain during the execution phase.
+	 * Watch for changes to the extension's mainClassName and make sure the task's main class is
+     * set correctly.  This method was created because Gradle 6.4 made changes to the main class
+     * preventing us from calling setMain during the execution phase.
+     *
 	 * @param closure
 	 * @return
 	 */
@@ -168,17 +163,16 @@ class LiquibaseTask extends JavaExec {
 	}
 
 	/**
-	 * Fix the main class to be used when running Liquibase.  Since we can't
-	 * call setMain directly in Gradle 6.4+, we had to register a listener that
-	 * watched for changes to the extension's "mainClassName" property.  But
-	 * if the user didn't set a value, we'll need to set one before we try to
-	 * run Liquibase so the property listener can set the class name correctly.
+	 * Fix the main class to be used when running Liquibase.  Since we can't call setMain directly
+     * in Gradle 6.4+, we had to register a listener that watched for changes to the extension's
+     * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
+     * we try to run Liquibase so the property listener can set the class name correctly.
 	 * <p>
-	 * This method detects the version of Liquibase in the liquibaseRuntime
-	 * configuration and chooses the right default based on the version it finds.
+	 * This method detects the version of Liquibase in the liquibaseRuntime configuration and
+     * chooses the right default based on the version it finds.
 	 * <p>
-	 * If for some reason, it finds Liquibase in the classpath more than once,
-	 * the last one it finds, wins.
+	 * If for some reason, it finds Liquibase in the classpath more than once, the last one it
+     * finds, wins.
 	 *
 	 * @param classpath the classpath the task will use when running Liquibase.
 	 */
@@ -202,7 +196,6 @@ class LiquibaseTask extends JavaExec {
 			throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
 		}
 
-
 		if ( lbAtLeast(foundVersion, '4.4') ) {
 			project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
 			project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
@@ -215,12 +208,12 @@ class LiquibaseTask extends JavaExec {
 	}
 
 	/**
-	 * Compare a given Liquibase semver to a target semver and return whether
-	 * the given semver is at least the version of the target.
+	 * Compare a given Liquibase semver to a target semver and return whether the given semver is
+     * at least the version of the target.
+     *
 	 * @param givenSemver the version of Liquibase found in the classpath
 	 * @param targetSemver the target version to use as a comparison.
-	 * @return @{code true} if the given version is greater than or equal to
-	 * the target semver.
+	 * @return @{code true} if the given version is greater than or equal to the target semver.
 	 */
 	def lbAtLeast(givenSemver, targetSemver) {
 		List givenVersions = givenSemver.tokenize('.')
@@ -237,7 +230,8 @@ class LiquibaseTask extends JavaExec {
 			}
 		}
 
-		// If we got this far then all the common indices are identical, so whichever version is longer must be more recent
+		// If we got this far then all the common indices are identical, so whichever version is
+        // longer must be more recent
 		return givenVersions.size() > targetVersions.size()
 	}
 }
