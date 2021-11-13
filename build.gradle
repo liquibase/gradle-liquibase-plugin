@@ -10,7 +10,6 @@ buildscript {
 		}
   }
   dependencies {
-    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
     classpath 'com.gradle.publish:plugin-publish-plugin:0.11.0'
   }
 }
@@ -21,12 +20,11 @@ apply plugin: 'groovy'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 apply plugin: 'idea'
-apply plugin: 'com.jfrog.bintray'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-// Release version that won't conflict with the bintray plugin
+// Release version that won't conflict with any plugins
 def releaseVersion = '2.1.0'
 
 group = 'org.liquibase'
@@ -152,36 +150,6 @@ publishing {
 	}
 }
 
-// Configure BinTray publishing
-bintray {
-	user = project.hasProperty('bintrayUsername') ? project.getProperty('bintrayUsername') : ''
-	key = project.hasProperty('bintrayApiKey') ? project.getProperty('bintrayApiKey') : ''
-
-	publications = [ 'liquibasePlugin' ]
-	publish = true
-
-	pkg {
-		// repo = 'gradle-plugins'
-		repo = 'maven'
-		name = 'liquibase-gradle-plugin'
-		desc = 'A Gradle plugin for running the Liquibase database upgrade tool.'
-		licenses = [ 'Apache-2.0' ]
-		websiteUrl = 'https://github.com/liquibase/liquibase-gradle-plugin'
-		issueTrackerUrl = 'https://github.com/liquibase/liquibase-gradle-plugin/issues'
-		vcsUrl = 'https://github.com/liquibase/liquibase-gradle-plugin.git'
-		labels = [ 'gradle', 'liquibase', 'database' ]
-		publicDownloadNumbers = true
-		version {
-			// name = version
-			// vcsTag = version
-			vcsTag = "Release_${releaseVersion}"
-			attributes = [
-				'gradle-plugin': 'org.liquibase.gradle:org.liquibase:liquibase-gradle-plugin'
-			]
-		}
-	}
-}
-
 signing {
 	sign publishing.publications.liquibasePlugin
 }
@@ -194,8 +162,8 @@ gradle.taskGraph.whenReady { taskGraph ->
 	// configuration - it tries to publish a org.liquibase.gradle artifact,
 	// which is wrong.  The quick and very dirty solution is to disable those
 	// tasks.
-	// Comment this to publish to Gradle and Bintray, Uncomment for Maven Central
-//	taskGraph.allTasks.findAll { it.name ==~ /.*MavenPublication.*/ }*.enabled = false
+	// Comment this to publish to Gradle, Uncomment for Maven Central
+	taskGraph.allTasks.findAll { it.name ==~ /.*MavenPublication.*/ }*.enabled = false
 
 	// Only *require* signing if we are uploading a release version.  If we do
 	// need to sign, make sure we've got the properties we need to do the signing.
