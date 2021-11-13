@@ -7,16 +7,30 @@ Steve Saliman.
 
 News
 ----
-### October 31, 2021
-Release 2.0.5 adds support for Liquibase 4.4.0 and 4.5.0. Liquibase 4.4.0 made
+### November 13, 2021
+**IMPORTANT:** Additional configuration will be required to use this plugin
+with Liquiabse 4.4.0+
+
+Release 2.1.0 adds support for Liquibase 4.4.0 and 4.5.0. Liquibase 4.4.0 made
 extensive changes to the way it processes command line arguments.  Liquibase now
 uses the picocli library to parse options, but for some reason that library
-isn't a transitive dependency of Liquibase itself, so you'll have to add the
+isn't a transitive dependency of Liquibase itself, so if you want to use this
+plugin with Liquibase 4.4.0+, you'll have to add the 
 `liquibaseRuntime 'info.picocli:picocli:4.6.1'` dependency to your build.gradle
 file.  
 
-In addition, if you set a mainClassName in the liquibase block of your
-build.gradle file, it will most likely fail in Liquibase 4.4+.
+Liquibase now has 2 "Main" classes and this plugin chooses the best one based
+on the version of Liquibase it detects.  You can still set a mainClassName,
+in the liquibase block of your build.gradle file, but it will most likely fail
+in Liquibase 4.4+. 
+
+There is also a subtle change in the way "SQL" tasks get created.  Tasks that 
+ended with "SQL" now end with "Sql".  For example `updateSQL` is now
+`updateSql`.  Since neither Gradle nor Liquibase seems to pay too much attention
+to case, this should not cause any breaking changes for now, but as Liquibase
+itself transitions from camelCase commands to kebab case commands, this may
+become important in the future, and this change will make it easier to pass the
+right thing to Liquibase if and when Liquibase ever stops supporting camel case.
  
 ### March 6, 2021
 Liquibase version 4.3.0 has a bug that causes the gradle plugin to break.  This
@@ -153,7 +167,8 @@ Liquibase parser that is in the classpath when Liquibase runs.  Some parsers,
 such as the XML parser and the YAML parser, are part of Liquibase itself, 
 although some parsers require you to add additional dependencies to the 
 liquibase classpath.  For example, the YAML parser requires 
-`org.yaml:snakeyaml:1.15`.
+`org.yaml:snakeyaml:1.15`.  Using this plugin with Liquibase 4.4.0+ also 
+requires the `info.picocli:picocli:4.6.1` library.
 
 One of the best ways to parse Liquibase changesets is with the Groovy DSL, 
 which is a much nicer way to write changelogs, especially since Groovy is the 
@@ -197,7 +212,7 @@ build.gradle file:
 
 ```groovy
 plugins {
-  id 'org.liquibase.gradle' version '2.0.3'
+  id 'org.liquibase.gradle' version '2.1.0'
 }
 ```
 
@@ -209,7 +224,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.liquibase:liquibase-gradle-plugin:2.0.3"
+        classpath "org.liquibase:liquibase-gradle-plugin:2.1.0"
     }
 }
 apply plugin: 'org.liquibase.gradle'
@@ -221,15 +236,16 @@ a task, and Liquibase will need to be able to find database drivers, changelog
 parsers, etc. in the classpath.  This is done by adding `liquibaseRuntime` 
 dependencies to the `dependencies` block in the `build.gradle` file.  At a
 minimum, you'll need to include Liquibase itself along with a database driver.
-We also recommend including the
-[Liquibase Groovy DSL](https://github.com/liquibase/liquibase-groovy-dsl) 
+Liquibase 4.4.0+ also requires the picocli library.  We also recommend including
+the [Liquibase Groovy DSL](https://github.com/liquibase/liquibase-groovy-dsl) 
 which parses changelogs written in an elegant Groovy DSL instead of hurtful XML.
 An example of `liquibaseRuntime` entries is below:
 
 ```groovy
 dependencies {
-  liquibaseRuntime 'org.liquibase:liquibase-core:3.8.1'
-  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:2.1.1'
+  liquibaseRuntime 'org.liquibase:liquibase-core:4.5.0'
+  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:3.0.0'
+  liquibaseRuntime 'info.picocli:picocli:4.6.1'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
 }
 ```
