@@ -135,7 +135,7 @@ class LiquibaseTask extends JavaExec {
 			throw new LiquibaseConfigurationException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
 		}
 		setClasspath(classpath)
-		fixMainClass(classpath)
+		fixMainClass()
 		// "inherit" the system properties from the Gradle JVM.
 		systemProperties System.properties
 		println "liquibase-plugin: Running the '${activity.name}' activity..."
@@ -168,28 +168,29 @@ class LiquibaseTask extends JavaExec {
      * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
      * we try to run Liquibase so the property listener can set the class name correctly.
 	 * <p>
-	 * This method detects the version of Liquibase in the liquibaseRuntime configuration and
-     * chooses the right default based on the version it finds.
+	 * This method detects the resolved version of Liquibase in the liquibaseRuntime configuration
+     * and chooses the right default based on the version it finds.
 	 * <p>
 	 * If for some reason, it finds Liquibase in the classpath more than once, the last one it
      * finds, wins.
-	 *
-	 * @param classpath the classpath the task will use when running Liquibase.
 	 */
-	def fixMainClass(classpath) {
+	def fixMainClass() {
 		if (project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
 			project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
 			return
 		}
 
 		def foundVersion
-		classpath.allDependencies.each { dep ->
-			if ( dep.name == 'liquibase-core' ) {
-				project.logger.debug("liquibase-plugin: Found version ${dep.version} of liquibase-core.")
-				if ( foundVersion && foundVersion != dep.version ) {
+        def config = project.configurations.liquibaseRuntime
+		config.resolvedConfiguration.resolvedArtifacts.each { dep ->
+			def moduleName = dep.moduleVersion.id.name
+			def moduleVersion = dep.moduleVersion.id.version
+            if ( moduleName == 'liquibase-core' ) {
+				project.logger.debug("liquibase-plugin: Found version ${moduleVersion} of liquibase-core.")
+				if ( foundVersion && foundVersion != moduleVersion ) {
 					project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
 				}
-				foundVersion = dep.version
+				foundVersion = moduleVersion
 			}
 		}
 		if ( !foundVersion ) {

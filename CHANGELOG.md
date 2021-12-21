@@ -1,3 +1,7 @@
+Changes for 2.1.1
+=================
+- Fixed the code that auto-detects the version of Liquibase.  Fixed #94
+
 Changes for 2.1.0
 =================
 - The plugin will now throw an exception when there are no activities defined, which would happen if

@@ -25,7 +25,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 // Release version that won't conflict with any plugins
-def releaseVersion = '2.1.0'
+def releaseVersion = '2.1.1'
 
 group = 'org.liquibase'
 archivesBaseName = 'liquibase-gradle-plugin'
