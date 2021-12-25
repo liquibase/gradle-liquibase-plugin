@@ -7,10 +7,10 @@ currently maintained by Steve Saliman.
 News
 ----
 **IMPORTANT:** Additional configuration will be required to use version 2.1.0+ of this plugin with
-Liquiabse 4.4.0+
+Liquibase 4.4.0+
 
 ### December 20, 2021
-Fixed the Code that detects the version of liquibase in use at the time the liauibase tasks run.  
+Fixed the Code that detects the version of liquibase in use at the time the liquibase tasks run.  
 
 ### November 13, 2021
 
