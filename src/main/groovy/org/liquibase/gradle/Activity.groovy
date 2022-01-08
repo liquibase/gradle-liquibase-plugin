@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2021 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2022 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -22,37 +22,37 @@ package org.liquibase.gradle
  * @author Steven C. Saliman
  */
 class Activity {
-	def name
-	def arguments = [logLevel: 'info']
-	def parameters = [:]
+    def name
+    def arguments = [logLevel: 'info']
+    def parameters = [:]
 
-	Activity(String name) {
-		this.name = name
-	}
+    Activity(String name) {
+        this.name = name
+    }
 
-	/**
-	 * Define the ChangeLog parameters to use for this activity.  ChangeLog parameters are used by
+    /**
+     * Define the ChangeLog parameters to use for this activity.  ChangeLog parameters are used by
      * Liquibase to perform token substitution on change sets.
      *
-	 * @param tokenMap the map of tokens and their values.
-	 */
-	def changeLogParameters(tokenMap) {
-		tokenMap.each {
-			parameters[it.key] = it.value
-		}
-	}
+     * @param tokenMap the map of tokens and their values.
+     */
+    def changeLogParameters(tokenMap) {
+        tokenMap.each {
+            parameters[it.key] = it.value
+        }
+    }
 
-	/**
-	 * Used to configure the Liquibase arguments.  The method name is assumed to be a valid
+    /**
+     * Used to configure the Liquibase arguments.  The method name is assumed to be a valid
      * Liquibase argument.  Not worrying about that here is one way we decouple from a particular
      * version of Liquibase.
      *
-	 * @param name the name of the Liquibase argument
-	 * @param args Technically an array, the first value will be taken as the value of the Liquibase
+     * @param name the name of the Liquibase argument
+     * @param args Technically an array, the first value will be taken as the value of the Liquibase
      * argument.
-	 */
-	def methodMissing(String name, args) {
-		arguments[name] = args[0]
-	}
+     */
+    def methodMissing(String name, args) {
+        arguments[name] = args[0]
+    }
 
 }

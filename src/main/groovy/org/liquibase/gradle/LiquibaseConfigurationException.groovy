@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2021 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2022 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -22,8 +22,8 @@ import org.gradle.api.GradleException
  * @author Steven C. Saliman
  */
 class LiquibaseConfigurationException extends GradleException {
-	LiquibaseConfigurationException(String msg) {
-		super(msg)
-	}
+    LiquibaseConfigurationException(String msg) {
+        super(msg)
+    }
 
 }

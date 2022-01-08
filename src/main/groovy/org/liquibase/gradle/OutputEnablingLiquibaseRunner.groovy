@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2021 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2022 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -26,36 +26,36 @@ package org.liquibase.gradle
  * @author Steven C. Saliman
  */
 class OutputEnablingLiquibaseRunner {
-	// The name of the Main class in Liquibase itself.
-	def static MAIN_CLASS = 'liquibase.integration.commandline.Main'
+    // The name of the Main class in Liquibase itself.
+    def static MAIN_CLASS = 'liquibase.integration.commandline.Main'
 
-	static void main(String[] args) {
+    static void main(String[] args) {
 
-		def main = Class.forName MAIN_CLASS
+        def main = Class.forName MAIN_CLASS
 
-		// Get the consoleLogFilter field of the main class.  This version throw exception if not
+        // Get the consoleLogFilter field of the main class.  This version throw exception if not
         // found.
-		def consoleLogFilterField = main.declaredFields.find {
-			it.name == 'consoleLogFilter'
-		}
+        def consoleLogFilterField = main.declaredFields.find {
+            it.name == 'consoleLogFilter'
+        }
 
-		// If we found a consoleLogFilter, it's value is an instance of an inner class of Main.  Get
+        // If we found a consoleLogFilter, it's value is an instance of an inner class of Main.  Get
         // the outputLogs field from that instance and set it to true.
-		if ( consoleLogFilterField ) {
-			def outputLogsField
-			def consoleLogFilterInstance
-			consoleLogFilterField.setAccessible(true)
-			consoleLogFilterInstance = consoleLogFilterField.get(null)
-			outputLogsField = consoleLogFilterInstance.class.declaredFields.find {
-				it.name == 'outputLogs'
-			}
-			if ( outputLogsField ) {
-				outputLogsField.setAccessible(true)
-				outputLogsField.set(consoleLogFilterInstance, true)
-			}
-		}
+        if ( consoleLogFilterField ) {
+            def outputLogsField
+            def consoleLogFilterInstance
+            consoleLogFilterField.setAccessible(true)
+            consoleLogFilterInstance = consoleLogFilterField.get(null)
+            outputLogsField = consoleLogFilterInstance.class.declaredFields.find {
+                it.name == 'outputLogs'
+            }
+            if ( outputLogsField ) {
+                outputLogsField.setAccessible(true)
+                outputLogsField.set(consoleLogFilterInstance, true)
+            }
+        }
 
-		// Now we can run Liquibase.
-		main.main args
-	}
+        // Now we can run Liquibase.
+        main.main args
+    }
 }
