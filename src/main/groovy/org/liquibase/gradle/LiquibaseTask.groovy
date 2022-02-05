@@ -15,7 +15,8 @@
 package org.liquibase.gradle
 
 import org.gradle.api.Task
-import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
@@ -155,8 +156,9 @@ class LiquibaseTask extends JavaExec {
      */
     @Override
     Task configure(Closure closure) {
-        fixMainClass(project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION).resolvedConfiguration.resolvedArtifacts)
-        mainClass.set(project.extensions.findByType(LiquibaseExtension.class).mainClassName)
+        mainClass.set(
+                fixMainClass(project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION))
+        )
         return super.configure(closure)
     }
 
@@ -172,32 +174,37 @@ class LiquibaseTask extends JavaExec {
      * If for some reason, it finds Liquibase in the classpath more than once, the last one it
      * finds, wins.
      */
-    def fixMainClass(Set<ResolvedArtifact> artifacts) {
-        if ( project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
+    Provider<String> fixMainClass(Configuration configuration) {
+        def customMainClass = project.extensions.findByType(LiquibaseExtension.class).mainClassName
+        if ( customMainClass ) {
             project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
-            return
+            return objectFactory.property(String.class).value(customMainClass)
         }
 
-        def coreDeps = artifacts.findAll { dep ->
-            dep.moduleVersion.id.name == 'liquibase-core'
-        }
-        if (coreDeps.size() > 1) {
-            project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
-        }
-        def foundVersion = coreDeps.last()?.moduleVersion?.id?.version
-        if ( !foundVersion ) {
-            throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
-        } else {
-            project.logger.debug("liquibase-plugin: Found version $foundVersion of liquibase-core.")
-        }
+        return providerFactory.provider {
+            configuration.resolvedConfiguration.resolvedArtifacts
+        }.map { artifacts ->
+            def coreDeps = artifacts.findAll { dep ->
+                dep.moduleVersion.id.name == 'liquibase-core'
+            }
+            if (coreDeps.size() > 1) {
+                project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
+            }
+            def foundVersion = coreDeps.last()?.moduleVersion?.id?.version
+            if ( !foundVersion ) {
+                throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
+            } else {
+                project.logger.debug("liquibase-plugin: Found version $foundVersion of liquibase-core.")
+            }
 
-        if ( lbAtLeast(foundVersion, '4.4') ) {
-            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
-            project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
+            if ( lbAtLeast(foundVersion, '4.4') ) {
+                project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
+                return 'liquibase.integration.commandline.LiquibaseCommandLine'
 
-        } else {
-            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.Main'
-            project.logger.debug("liquibase-plugin: Using the pre 4.4 command line parser.")
+            } else {
+                project.logger.debug("liquibase-plugin: Using the pre 4.4 command line parser.")
+                return 'liquibase.integration.commandline.Main'
+            }
         }
 
     }
