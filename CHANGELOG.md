@@ -15,7 +15,7 @@ Changes for 2.1.0
 - The plugin auto-detects which version of Liquibase is being used, and chooses the main class
   accordingly.
   
-- Tasks ending with "SQL" now end in "Sql" to make the plugin more future proof when the day comes
+- Tasks ending with "SQL" now end in "Sql" to make the plugin more future-proof when the day comes
   that Liquibase stops supporting camel case commands in favor of kebab case.
   
 Changes for 2.0.4
