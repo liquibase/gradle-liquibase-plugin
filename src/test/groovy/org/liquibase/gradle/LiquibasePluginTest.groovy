@@ -47,7 +47,7 @@ class LiquibasePluginTest {
      */
     @Test
     void applyPluginByName() {
-        project.apply plugin: 'liquibase'
+        project.apply plugin: 'org.liquibase.gradle'
         assertTrue("Project is missing plugin", project.plugins.hasPlugin(LiquibasePlugin))
         // the tag task takes an arg...
         def task = project.tasks.findByName('tag')
@@ -72,7 +72,7 @@ class LiquibasePluginTest {
     @Test
     void applyPluginByNameWithPrefix() {
         project.ext.liquibaseTaskPrefix = 'liquibase'
-        project.apply plugin: 'liquibase'
+        project.apply plugin: 'org.liquibase.gradle'
         assertTrue("Project is missing plugin", project.plugins.hasPlugin(LiquibasePlugin))
         // the tag task takes an arg...
         def task = project.tasks.findByName('liquibaseTag')

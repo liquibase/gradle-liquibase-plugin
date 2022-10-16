@@ -9,6 +9,14 @@ News
 **IMPORTANT:** Additional configuration will be required to use version 2.1.0+ of this plugin with
 Liquibase 4.4.0+
 
+### October 20, 2022
+This version drops support for the older plugin id.  To apply this plugin now, you must use 
+`org.liquibase.gradle`.  
+
+This version of the plugin now sends the newer kebab case commands to Liquibase when it detects
+newer versions in the classpath.  For example, it uses `drop-all` when it detects version 4.4+
+instead of the legacy `dropAll` command that it sends to older versions of Liquibase.
+
 ### December 20, 2021
 Fixed the Code that detects the version of liquibase in use at the time the liquibase tasks run.  
 

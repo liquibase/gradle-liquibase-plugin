@@ -28,10 +28,17 @@ import org.gradle.api.tasks.TaskAction
 class LiquibaseTask extends JavaExec {
 
     /**
-     * The Liquibase command to run.
+     * The Liquibase command to run in Liquibase 4.4+
      */
     @Input
     def command
+
+    /**
+     * The legacy Liquibase command to run in Liquibase < 4.4
+     */
+    @Input
+    def legacyCommand
+
     /**
      * Whether or not the command needs a value, such as "tag" or "rollbackCount"
      */
@@ -70,6 +77,8 @@ class LiquibaseTask extends JavaExec {
      * @param activity the activity holding the Liquibase particulars.
      */
     def runLiquibase(activity) {
+        def liquibaseVersion = findLiquibaseVersion()
+
         def args = []
         // liquibase forces to add command params after the the command.  We This list is based off
         // of the Liquibase code, and reflects the things That liquibase will explicitly look for in
@@ -91,7 +100,12 @@ class LiquibaseTask extends JavaExec {
         }
 
         if ( command ) {
-            args += command
+            if ( versionAtLeast(liquibaseVersion, '4.4') ) {
+                args += command
+            } else {
+                project.logger.debug("liquibase-plugin: Using the pre 4.4 legacy ${legacyCommand} command.")
+                args += legacyCommand
+            }
         }
         // Add the command parameters after the command.
         activity.arguments.findAll({ commandParams.contains(it.key) }).each {
@@ -135,7 +149,7 @@ class LiquibaseTask extends JavaExec {
             throw new LiquibaseConfigurationException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
         }
         setClasspath(classpath)
-        fixMainClass()
+        fixMainClass(liquibaseVersion)
         // "inherit" the system properties from the Gradle JVM.
         systemProperties System.properties
         println "liquibase-plugin: Running the '${activity.name}' activity..."
@@ -163,23 +177,14 @@ class LiquibaseTask extends JavaExec {
     }
 
     /**
-     * Fix the main class to be used when running Liquibase.  Since we can't call setMain directly
-     * in Gradle 6.4+, we had to register a listener that watched for changes to the extension's
-     * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
-     * we try to run Liquibase so the property listener can set the class name correctly.
-     * <p>
      * This method detects the resolved version of Liquibase in the liquibaseRuntime configuration
-     * and chooses the right default based on the version it finds.
      * <p>
      * If for some reason, it finds Liquibase in the classpath more than once, the last one it
      * finds, wins.
+     * @return the version of Liquibase found
+     * @throws LiquibaseConfigurationException if no version if Liquibase is found at runtime.
      */
-    def fixMainClass() {
-        if ( project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
-            project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
-            return
-        }
-
+    def findLiquibaseVersion() {
         def foundVersion
         def config = project.configurations.liquibaseRuntime
         config.resolvedConfiguration.resolvedArtifacts.each { dep ->
@@ -196,8 +201,26 @@ class LiquibaseTask extends JavaExec {
         if ( !foundVersion ) {
             throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
         }
+        return foundVersion
+    }
 
-        if ( lbAtLeast(foundVersion, '4.4') ) {
+    /**
+     * Fix the main class to be used when running Liquibase.  Since we can't call setMain directly
+     * in Gradle 6.4+, we had to register a listener that watched for changes to the extension's
+     * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
+     * we try to run Liquibase so the property listener can set the class name correctly.
+     * <p>
+     * This method chooses the right default based on the version of liquibase it is given.
+     *
+     * @param liquibaseVersion the version of liquibase to use.
+     */
+    def fixMainClass(liquibaseVersion) {
+        if ( project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
+            project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
+            return
+        }
+
+        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
             project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
             project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
 
@@ -216,7 +239,7 @@ class LiquibaseTask extends JavaExec {
      * @param targetSemver the target version to use as a comparison.
      * @return @{code true} if the given version is greater than or equal to the target semver.
      */
-    def lbAtLeast(givenSemver, targetSemver) {
+    def versionAtLeast(givenSemver, targetSemver) {
         List givenVersions = givenSemver.tokenize('.')
         List targetVersions = targetSemver.tokenize('.')
 
