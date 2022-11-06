@@ -7,7 +7,10 @@ currently maintained by Steve Saliman.
 News
 ----
 **IMPORTANT:** Additional configuration will be required to use version 2.1.0+ of this plugin with
-Liquibase 4.4.0+
+Liquibase 4.4.0+. Liquibase now uses the picocli library to parse options, but for some reason that
+library isn't a transitive dependency of Liquibase itself, so if you want to use this plugin with
+Liquibase 4.4.0+, you'll have to add the `liquibaseRuntime 'info.picocli:picocli:4.6.1'` dependency
+to your build.gradle file.
 
 ### October 20, 2022
 This version drops support for the older plugin id.  To apply this plugin now, you must use 
@@ -16,6 +19,9 @@ This version drops support for the older plugin id.  To apply this plugin now, y
 This version of the plugin now sends the newer kebab case commands to Liquibase when it detects
 newer versions in the classpath.  For example, it uses `drop-all` when it detects version 4.4+
 instead of the legacy `dropAll` command that it sends to older versions of Liquibase.
+
+This version also adds support for supplying an output file, to tasks that use one, with the 
+`-PliquibaseOutputFile=someFile` property.
 
 ### December 20, 2021
 Fixed the Code that detects the version of liquibase in use at the time the liquibase tasks run.  
@@ -186,6 +192,19 @@ named `liquibaseUpdate`, `liquibaseTag`, etc.  You could do the same thing by ad
 `-PliquibaseTaskPrefix=liquibase` argument when running Gradle, but using `gradle.properties` is
 probably a better solution because all users would get the same tasks every time. 
 
+The Liquibase plugin has some subtle differences from the Liquibase command line utility.
+
+1. The liquibase `dbDoc` command has no default for the output directory, but the plugin does.  If
+  no value is given to this command, the plugin will put it in `{buildDir}/database/docs`.
+
+2. Some tasks like `updateSql` produce output.  Users of the plugin have 3 options for specifying
+  how those tasks work
+    - With no configuration, the output will simply go to STDOUT.
+    - If the activity has an `outputFile` method, it will use that file for all tasks that support
+      output files.
+    - Users can specify `-PliquibaseOutputFile=myFile` to send output to a specific file.  If 
+     specified, this command line option always wins.
+
 There are 3 basic parts to using the Liquibase Gradle Plugin.  Including the plugin, setting up the
 Liquibase runtime dependencies, and configuring the plugin.  Each step is described below.
 
@@ -194,7 +213,7 @@ To include the plugin into Gradle builds, simply add the following to your build
 
 ```groovy
 plugins {
-  id 'org.liquibase.gradle' version '2.1.0'
+  id 'org.liquibase.gradle' version '2.2.0'
 }
 ```
 
@@ -206,7 +225,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.liquibase:liquibase-gradle-plugin:2.1.0"
+        classpath "org.liquibase:liquibase-gradle-plugin:2.2.0"
     }
 }
 apply plugin: 'org.liquibase.gradle'
@@ -224,7 +243,7 @@ below:
 
 ```groovy
 dependencies {
-  liquibaseRuntime 'org.liquibase:liquibase-core:4.5.0'
+  liquibaseRuntime 'org.liquibase:liquibase-core:4.16.1'
   liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:3.0.0'
   liquibaseRuntime 'info.picocli:picocli:4.6.1'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
@@ -279,8 +298,8 @@ Or, if you don't already have a `configurations` block, you can simply add
 Parameters for Liquibase commands are configured in the `liquibase` block inside the build.gradle
 file.  This block contains a series of, "activities", each defining a series of Liquibase
 parameters.  Any method in an "activity" is assumed to be a Liquibase command line parameter.  For
-example, including `changeLogFile 'myfile.groovy'` in an activity does the same thing as
-`--changeLogfile=myfile.groovy` would do on the command line.  Including `difftypes 'data'` in an
+example, including `changelogFile 'myfile.groovy'` in an activity does the same thing as
+`--changelog-file=myfile.groovy` would do on the command line.  Including `difftypes 'data'` in an
 activity does the same thing as `difftypes=data` would do on the command line, etc.  The Liquibase
 documentation details all the valid command line parameters.  The `liquibase` block also has an
 optional "runList", which determines which activities are run for each task.  If no runList is
@@ -298,19 +317,19 @@ Additionally, you want to occasionally run a diff between the changelog and the 
 liquibase {
   activities {
     main {
-      changeLogFile 'src/main/db/main.groovy'
+      changelogFile 'src/main/db/main.groovy'
       url project.ext.mainUrl
       username project.ext.mainUsername
       password project.ext.mainPassword
     }
     security {
-      changeLogFile 'src/main/db/security.groovy'
+      changelogFile 'src/main/db/security.groovy'
       url project.ext.securityUrl
       username project.ext.securityUsername
       password project.ext.securityPassword
     }
     diffMain {
-      changeLogFile 'src/main/db/main.groovy'
+      changelogFile 'src/main/db/main.groovy'
       url project.ext.mainUrl
       username project.ext.mainUsername
       password project.ext.mainPassword
@@ -380,9 +399,9 @@ Upgrading the version of Liquibase itself
 -----------------------------------------
 Most of the time, the new versions of Liquibase works the same as the old one, but sometimes the new
 versions have compatibility issues with existing change sets, as happened when Liquibase released
-version3.  When this happens, we recommend the following procedure to do the upgrade:
+version 3.  When this happens, we recommend the following procedure to do the upgrade:
 
-1. Make sure all of your Liquibase managed databases are up to date by running `gradle update` on
+1. Make sure all of your Liquibase managed databases are up-to-date by running `gradle update` on
    them *before upgrading to the new version of the Liquibase plugin*.
 
 2. Create a new, throw away database to test your Liquibase change sets.  Run `gradle update` on the
@@ -396,5 +415,5 @@ version3.  When this happens, we recommend the following procedure to do the upg
    checksums that were calculated by the old version of Liquibase 2 by running 
    `gradle clearChecksums` against all databases.
 
-4. Finally, run `gradle changeLogSync` on all databases to calculate new checksums.
+4. Finally, run `gradle changelogSync` on all databases to calculate new checksums.
 

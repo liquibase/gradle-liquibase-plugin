@@ -14,11 +14,12 @@
 
 package org.liquibase.gradle
 
-import org.gradle.api.GradleException
 import org.gradle.api.Task
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
+
+import static org.liquibase.gradle.Util.versionAtLeast
 
 /**
  * Gradle task that calls Liquibase to run a command.
@@ -28,26 +29,14 @@ import org.gradle.api.tasks.TaskAction
 class LiquibaseTask extends JavaExec {
 
     /**
-     * The Liquibase command to run in Liquibase 4.4+
+     * The Liquibase command to run
      */
     @Input
-    def command
-
-    /**
-     * The legacy Liquibase command to run in Liquibase < 4.4
-     */
-    @Input
-    def legacyCommand
-
-    /**
-     * Whether or not the command needs a value, such as "tag" or "rollbackCount"
-     */
-    @Input
-    def requiresValue = false
+    LiquibaseCommand liquibaseCommand
 
     @TaskAction
     @Override
-    public void exec() {
+    void exec() {
 
         def activities = project.liquibase.activities
         def runList = project.liquibase.runList
@@ -79,70 +68,14 @@ class LiquibaseTask extends JavaExec {
     def runLiquibase(activity) {
         def liquibaseVersion = findLiquibaseVersion()
 
-        def args = []
-        // liquibase forces to add command params after the the command.  We This list is based off
-        // of the Liquibase code, and reflects the things That liquibase will explicitly look for in
-        // the command params.  Note That when liquibase process a command param, it still sets the
-        // appropriate Main class instance variable, so we don't need to worry too much about
-        // mapping params to commands.
-        def commandParams = [
-                'excludeObjects',
-                'includeObjects',
-                'schemas',
-                'snapshotFormat',
-                'sql',
-                'sqlFile',
-                'delimiter',
-                'rollbackScript'
-        ]
-        activity.arguments.findAll({ !commandParams.contains(it.key) }).each {
-            args += "--${it.key}=${it.value}"
+        // Set values on the JavaExec task using the Argument Builder appropriate for the Liquibase
+        // version we have.
+        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
+            setArgs(ArgumentBuilder.buildLiquibaseArgs(project, activity, liquibaseCommand, liquibaseVersion))
+        } else {
+            logger.warn("using legacy argument builder.  Consider updating to Liquibase 4.4+")
+            setArgs(LegacyArgumentBuilder.buildLiquibaseArgs(project, activity, liquibaseCommand, liquibaseVersion))
         }
-
-        if ( command ) {
-            if ( versionAtLeast(liquibaseVersion, '4.4') ) {
-                args += command
-            } else {
-                project.logger.debug("liquibase-plugin: Using the pre 4.4 legacy ${legacyCommand} command.")
-                args += legacyCommand
-            }
-        }
-        // Add the command parameters after the command.
-        activity.arguments.findAll({ commandParams.contains(it.key) }).each {
-            args += "--${it.key}=${it.value}"
-        }
-
-
-        def value = project.properties.get("liquibaseCommandValue")
-
-        // Special case for the dbDoc command.  This is the only command that has a default value
-        // in the plugin.
-        if ( !value && command == "dbDoc" ) {
-            value = project.file("${project.buildDir}/database/docs")
-        }
-
-        if ( !value && requiresValue ) {
-            throw new LiquibaseConfigurationException("The Liquibase '${command}' command requires a value")
-        }
-
-        // Unfortunately, due to a bug in liquibase itself
-        // (https://liquibase.jira.com/browse/CORE-2519), we need to put the -D arguments after the
-        // command but before the command argument.  If we put them before the command, they are
-        // ignored, and if we put them after the command value, the --verbose value of the status
-        // command will not be processed correctly.
-        activity.parameters.each {
-            args += "-D${it.key}=${it.value}"
-        }
-
-        // Because of Liquibase CORE-2519, a verbose status only works when --verbose is placed
-        // last.  Fortunately, this doesn't break the other commands, who appear to be able to
-        // handle -D options between the command and the value.
-        if ( value ) {
-            args += value
-        }
-
-        // Set values on the JavaExec task
-        setArgs(args)
 
         def classpath = project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION)
         if ( classpath == null || classpath.isEmpty() ) {
@@ -177,10 +110,39 @@ class LiquibaseTask extends JavaExec {
     }
 
     /**
+     * Fix the main class to be used when running Liquibase.  Since we can't call setMain directly
+     * in Gradle 6.4+, we had to register a listener that watched for changes to the extension's
+     * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
+     * we try to run Liquibase so the property listener can set the class name correctly.
+     * <p>
+     * This method chooses the right default based on the version of liquibase it is given.
+     *
+     * @param liquibaseVersion the version of liquibase we're using.
+     */
+    def fixMainClass(liquibaseVersion) {
+        if ( project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
+            project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
+            return
+        }
+
+        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
+            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
+            project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
+
+        } else {
+            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.Main'
+            project.logger.warn("liquibase-plugin: Using the pre 4.4 command line parser.  Consider updating to Liquibase 4.4+")
+        }
+
+    }
+
+    /**
      * This method detects the resolved version of Liquibase in the liquibaseRuntime configuration
      * <p>
      * If for some reason, it finds Liquibase in the classpath more than once, the last one it
      * finds, wins.
+     *
+     * @param project the Gradle project object from which we can get a classpath.
      * @return the version of Liquibase found
      * @throws LiquibaseConfigurationException if no version if Liquibase is found at runtime.
      */
@@ -204,58 +166,4 @@ class LiquibaseTask extends JavaExec {
         return foundVersion
     }
 
-    /**
-     * Fix the main class to be used when running Liquibase.  Since we can't call setMain directly
-     * in Gradle 6.4+, we had to register a listener that watched for changes to the extension's
-     * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
-     * we try to run Liquibase so the property listener can set the class name correctly.
-     * <p>
-     * This method chooses the right default based on the version of liquibase it is given.
-     *
-     * @param liquibaseVersion the version of liquibase to use.
-     */
-    def fixMainClass(liquibaseVersion) {
-        if ( project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
-            project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
-            return
-        }
-
-        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
-            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
-            project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
-
-        } else {
-            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.Main'
-            project.logger.debug("liquibase-plugin: Using the pre 4.4 command line parser.")
-        }
-
-    }
-
-    /**
-     * Compare a given Liquibase semver to a target semver and return whether the given semver is
-     * at least the version of the target.
-     *
-     * @param givenSemver the version of Liquibase found in the classpath
-     * @param targetSemver the target version to use as a comparison.
-     * @return @{code true} if the given version is greater than or equal to the target semver.
-     */
-    def versionAtLeast(givenSemver, targetSemver) {
-        List givenVersions = givenSemver.tokenize('.')
-        List targetVersions = targetSemver.tokenize('.')
-
-        def commonIndices = Math.min(givenVersions.size(), targetVersions.size())
-
-        for ( int i = 0; i < commonIndices; ++i ) {
-            def givenNum = givenVersions[i].toInteger()
-            def targetNum = targetVersions[i].toInteger()
-
-            if ( givenNum != targetNum ) {
-                return givenNum > targetNum
-            }
-        }
-
-        // If we got this far then all the common indices are identical, so whichever version is
-        // longer must be more recent
-        return givenVersions.size() > targetVersions.size()
-    }
 }
