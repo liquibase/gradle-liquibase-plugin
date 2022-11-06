@@ -57,48 +57,55 @@ class ArgumentBuilder {
         // Process each of the arguments from the activity block, figuring out what kind of argument
         // each one is and responding accordingly.
         activity.arguments.each {
-            if ( it.key == liquibaseCommand.valueArgument ) {
+            def argumentName = fixArgumentName(it.key, project)
+            if ( argumentName == liquibaseCommand.valueArgument ) {
                 // If an activity matches the "value" argument for the command, assume the activity
                 // argument is defining a default value for the command.
                 value = it.value
-            } else if ( LiquibaseCommand.POST_COMMAND_ARGUMENTS.contains(it.key) ) {
+            } else if ( LiquibaseCommand.POST_COMMAND_ARGUMENTS.contains(argumentName) ) {
                 // If it is in our list of args that come after the command, add the arg to the
                 // post command arguments, but only if the command supports this argument.
                 if ( liquibaseCommand.commandArguments.contains(it.key) ) {
-                    postCommandArgs += argumentString(it.key, it.value, project)
+                    postCommandArgs += argumentString(argumentName, it.value)
                 }
-            } else if (LiquibaseCommand.COMMAND_ARGUMENTS.contains(it.key) ) {
+            } else if (LiquibaseCommand.COMMAND_ARGUMENTS.contains(argumentName) ) {
                 // If it wasn't the value arg or a post-command arg, and it was a command arg, add
                 // it to the pre-command args, but only of the command supports this argument.
-                if ( liquibaseCommand.commandArguments.contains(it.key) ) {
-                    preCommandArgs += argumentString(it.key, it.value, project)
+                if ( liquibaseCommand.commandArguments.contains(argumentName) ) {
+                    // Liquibase 4.4+ has a bug with the way it handles CLI defined changelog
+                    // parameters with the drop-all command.  It fails to send them to the changelog
+                    // parser, causing the parse to fail when changelogs use parameters.
+                    // https://github.com/liquibase/liquibase/issues/3380  As a workaround, we won't
+                    // add the argument if it is the changeLogFile arg, and we're running the
+                    // drop-all command, and we're LB 44+.
+                    // Ignoring case here covers both the new and legacy values
+                    if ( argumentName.equalsIgnoreCase('changeLogFile') ) {
+                        if ( liquibaseCommand.command == 'drop-all' && versionAtLeast(liquibaseVersion, '4.4') ) {
+                            return
+                        }
+                        sendingChangeLog = true
+                    }
+                    preCommandArgs += argumentString(argumentName, it.value)
                 }
-            } else if ( it.key == "outputFile" ) {
+            } else if ( argumentName == "outputFile" ) {
                 // At this point, we're dealing with global arguments.  "outputFile" requires
                 // special handling since it can be overridden at the command line.  Just save the
                 // filename for later in case we didn't override it.
                 outputFile = it.value
             } else {
                 // If nothing matched above, then we're dealing with a global argument.
-                // Liquibase 4.4+ has a bug with the way it handles CLI defined changelog parameters
-                // with the drop-all command.  It fails to send them to the changelog parser,
-                // causing the parse to fail when changelogs use parameters.
-                // https://github.com/liquibase/liquibase/issues/3380
-                // As a workaround, we won't add the argument if it is the changeLogFile arg, and
-                // we're running the drop-all command, and we're LB 44+.
-                if ( it.key.equalsIgnoreCase('changeLogFile') ) {
-                    if ( liquibaseCommand.command == 'drop-all' && versionAtLeast(liquibaseVersion, '4.4') ) {
-                        return
-                    }
-                    sendingChangeLog = true
-                }
-                globalArgs += argumentString(it.key, it.value, project)
+                globalArgs += argumentString(argumentName, it.value)
             }
         }
 
         // Look for an output file in the command line and override any output file we already have.
         if ( project.hasProperty("liquibaseOutputFile") ) {
             outputFile = project.properties.get('liquibaseOutputFile')
+        }
+
+        // Look for a value from the command line
+        if ( project.hasProperty("liquibaseCommandValue") ) {
+            value = project.properties.get('liquibaseCommandValue')
         }
 
         // Now that we've processed all the arguments, let's make sure we have a value if we needed one.
@@ -133,7 +140,7 @@ class ArgumentBuilder {
         // If we have a value arg, send it as a key=value pair, otherwise, just send the value.
         if ( value ) {
             if ( liquibaseCommand.valueArgument ) {
-                liquibaseArgs += argumentString(liquibaseCommand.valueArgument, value, project)
+                liquibaseArgs += argumentString(liquibaseCommand.valueArgument, value)
             } else {
                 liquibaseArgs += value
             }
@@ -144,15 +151,11 @@ class ArgumentBuilder {
     }
 
     /**
-     * Determine the correct argument string to use for the version of Liquibase we're running.
+     * Determine the correct argument name to use when checking for supported arguments.
      * <p>
-     * Prior to Liquibase 4.4, the argument name was simply the name of the "method" that defined
-     * it in the build's "activities" block.
-     * <p>
-     * Starting with Liquibase 4.4, arguments are kebab-case, so we want to convert the "method"
-     * from the "activities" block.  However, there are some arguments that changed slightly in
-     * their names.  In order to support the pre 4.4 names when running 4.4, we'll make the
-     * replacement, but warn users that they may want to fix the activities block.
+     * Some arguments that changed slightly in their names with Liquibase 4.4.  In order to support
+     * the pre 4.4 names when running 4.4, we'll make the replacement, but warn users that they may
+     * want to fix the activities block.
      *
      * @param argumentName the name of the argument to process
      * @param the value of the argument to process.  If this is null, this method assumes we're
@@ -160,27 +163,42 @@ class ArgumentBuilder {
      * @param liquibaseVersion the version of liquibase we're using.
      * @return the name of the argument, as we want to send it to Liquibase.
      */
-    static def argumentString(argumentName, argumentValue, project) {
+    static def fixArgumentName(argumentName, project) {
         // A map of pre 4.4 names to 4.4+ names.  Each key is the activity method we used to use,
         // and each value is what we need to use now.
         def LEGACY_TO_OPTION_MAP = [
-                'changeLogFile': 'changelogFile',
+                'changeLogFile'                 : 'changelogFile',
                 'databaseChangeLogLockTableName': 'databaseChangelogLockTableName',
-                'databaseChangeLogTableName': 'databaseChangelogTableName',
-                'liquibaseHubApiKey': 'hubApiKey',
-                'liquibaseHubUrl': 'hubUrl',
-                'liquibaseProLicenseKey': 'proLicenseKey',
+                'databaseChangeLogTableName'    : 'databaseChangelogTableName',
+                'liquibaseHubApiKey'            : 'hubApiKey',
+                'liquibaseHubUrl'               : 'hubUrl',
+                'liquibaseProLicenseKey'        : 'proLicenseKey',
         ]
 
         def option = argumentName
 
         if ( LEGACY_TO_OPTION_MAP.containsKey(argumentName) ) {
-            project.logger.warn("liquibase-plugin: ${argumentName} has been deprecated.  Please use ${LEGACY_TO_OPTION_MAP[argumentName]} instead.")
+            project.logger.warn("liquibase-plugin: ${argumentName} has been deprecated.  Please use ${LEGACY_TO_OPTION_MAP[argumentName]} in your activity instead.")
             option = LEGACY_TO_OPTION_MAP[argumentName]
         }
 
+        return option;
+    }
+
+    /**
+     * Determine the correct argument string to send to Liquibase.  The argument name will be
+     * converted to kebab-case, and we'll add the value if we have one.  If we don't we'll assume
+     * we are dealing with a boolean argument.
+     *
+     * @param argumentName the name of the argument to process
+     * @param the value of the argument to process.  If this is null, this method assumes we're
+     *         dealing with a boolean argument.
+     * @return the argument string to send to Liquibase.
+     */
+    static def argumentString(argumentName, argumentValue) {
+
         // convert to kebab case.
-        option = option.replaceAll("([A-Z])", { Object[] it -> "-" + it[1].toLowerCase() })
+        def option = argumentName.replaceAll("([A-Z])", { Object[] it -> "-" + it[1].toLowerCase() })
 
         // return the right argument string.  If we don't have a value, assume a boolean argument.
         return argumentValue? "--${option}=${argumentValue}": "--${option}"

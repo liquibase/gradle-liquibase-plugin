@@ -55,7 +55,7 @@ class Activity {
      * argument.
      */
     def methodMissing(String name, args) {
-        arguments[name] = args[0]
+        arguments[name] = args? args[0]: null
     }
 
 }

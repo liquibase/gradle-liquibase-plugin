@@ -15,7 +15,7 @@ class LiquibasePluginTest {
 
     @Before
     void setUp() {
-        project = ProjectBuilder.builder().build();
+        project = ProjectBuilder.builder().build()
     }
 
     /**
