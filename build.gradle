@@ -3,45 +3,49 @@
 
 buildscript {
     repositories {
-        jcenter()
         mavenCentral()
         maven {
-            url 'https://plugins.gradle.org/m2/'
+            url "https://plugins.gradle.org/m2/"
         }
     }
     dependencies {
-        classpath 'com.gradle.publish:plugin-publish-plugin:0.11.0'
+        classpath "com.gradle.publish:plugin-publish-plugin:${gradlePublishPluginVersion}"
     }
 }
-
-apply plugin: 'com.gradle.plugin-publish'
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'groovy'
-apply plugin: 'maven-publish'
-apply plugin: 'signing'
-apply plugin: 'idea'
+// Apply the Plugin Publish plugin to make plugin publication possible.  The Plugin Publish plugin
+// will in turn auto-apply the Gradle Plugin Development Plugin (java-gradle-plugin) and the Maven
+// Publish plugin (maven-publish).
+apply plugin: "com.gradle.plugin-publish"
+apply plugin: "groovy"
+apply plugin: "signing"
+apply plugin: "idea"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-// Release version that won't conflict with any plugins
-def releaseVersion = '2.1.1'
-
-group = 'org.liquibase'
-archivesBaseName = 'liquibase-gradle-plugin'
-version = releaseVersion
-ext.isReleaseVersion = !version.endsWith('SNAPSHOT')
+group = "org.liquibase"
+archivesBaseName = "liquibase-gradle-plugin"
+version = liquibaseGradlePluginVersion
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 if ( isReleaseVersion ) {
-    println 'using staging'
-    ext.mavenCentralUploadUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+    println "using staging"
+    ext.mavenCentralUploadUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 } else {
-    println 'using snapshot'
-    ext.mavenCentralUploadUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+    println "using snapshot"
+    ext.mavenCentralUploadUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+}
+
+gradlePlugin {
+  plugins {
+    simplePlugin {
+      id = "org.liquibase.gradle"
+      implementationClass = "org.liquibase.gradle.LiquibasePlugin"
+    }
+  }
 }
 
 repositories {
-    jcenter()
     mavenLocal()
     mavenCentral()
 }
@@ -49,19 +53,19 @@ repositories {
 dependencies {
     implementation localGroovy()
     implementation gradleApi()
-    implementation 'org.codehaus.groovy:groovy:2.4.12'
-    testImplementation 'junit:junit:4.12'
+    implementation "org.codehaus.groovy:groovy:${groovyVersion}"
+    testImplementation "junit:junit:${junitVersion}"
 }
 
 task sourceJar(type: Jar) {
-    description = 'An archive of the source code for Maven Central'
-    classifier = 'sources'
+    description = "An archive of the source code for Maven Central"
+    classifier = "sources"
     from sourceSets.main.allSource
 }
 
 task groovydocJar(type: Jar, dependsOn: groovydoc) {
-    description = 'An archive of the GroovyDocs for Maven Central'
-    classifier = 'javadoc'
+    description = "An archive of the GroovyDocs for Maven Central"
+    classifier = "javadoc"
     from groovydoc
 }
 
@@ -70,20 +74,20 @@ task groovydocJar(type: Jar, dependsOn: groovydoc) {
 gradlePlugin {
     plugins {
         liquibasePlugin {
-            id = 'org.liquibase.gradle'
-            displayName = 'Gradle Liquibase Plugin'
-            description = 'A Gradle plugin for running the Liquibase database upgrade tool.'
-            implementationClass = 'org.liquibase.gradle.LiquibasePlugin'
+            id = "org.liquibase.gradle"
+            displayName = "Gradle Liquibase Plugin"
+            description = "A Gradle plugin for running the Liquibase database upgrade tool."
+            implementationClass = "org.liquibase.gradle.LiquibasePlugin"
         }
     }
 }
 
 // configuration for publishing to the Gradle plugins portal
 pluginBundle {
-    website = 'https://github.com/liquibase/liquibase-gradle-plugin'
-    vcsUrl = 'https://github.com/liquibase/liquibase-gradle-plugin.git'
-    description = 'A Gradle plugin for running the Liquibase database upgrade tool.'
-    tags = ['gradle', 'liquibase', 'database']
+    website = "https://github.com/liquibase/liquibase-gradle-plugin"
+    vcsUrl = "https://github.com/liquibase/liquibase-gradle-plugin.git"
+    description = "A Gradle plugin for running the Liquibase database upgrade tool."
+    tags = ["gradle", "liquibase", "database"]
 }
 
 // Configure the maven-publish plugin
@@ -91,30 +95,30 @@ publishing {
     publications {
         liquibasePlugin(MavenPublication) {
             from components.java
-            artifact groovydocJar
-            artifact sourceJar
+//            artifact groovydocJar
+//            artifact sourceJar
             pom {
-                name = 'Gradle Liquibase Plugin'
-                description = 'A Gradle plugin for running the Liquibase database upgrade tool.'
-                url = 'https://github.com/liquibase/liquibase-gradle-plugin'
-                packaging = 'jar'
+                name = "Gradle Liquibase Plugin"
+                description = "A Gradle plugin for running the Liquibase database upgrade tool."
+                url = "https://github.com/liquibase/liquibase-gradle-plugin"
+                packaging = "jar"
                 licenses {
                     license {
-                        name = 'The Apache Software License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name = "The Apache Software License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
                     }
                 }
                 developers {
                     developer {
-                        id = 'stevesaliman'
-                        name = 'Steven C. Saliman'
-                        email = 'support@saliman.net'
+                        id = "stevesaliman"
+                        name = "Steven C. Saliman"
+                        email = "support@saliman.net"
                     }
                 }
                 scm {
-                    connection = 'scm:https://liquibase@github.com/liquibase/liquibase-gradle-plugin'
-                    developerConnection = 'scm:git@github.com:liquibase/liquibase-gradle-plugin.git'
-                    url = 'https://github.com/liquibase/liquibase-gradle-plugin'
+                    connection = "scm:https://liquibase@github.com/liquibase/liquibase-gradle-plugin"
+                    developerConnection = "scm:git@github.com:liquibase/liquibase-gradle-plugin.git"
+                    url = "https://github.com/liquibase/liquibase-gradle-plugin"
                 }
             }
 
@@ -130,12 +134,12 @@ publishing {
                 def console = System.console()
                 console.printf "\n\nWe have to upload some things in this build...\n\n"
 
-                if ( !project.hasProperty('mavenCentralUsername') ) {
+                if ( !project.hasProperty("mavenCentralUsername") ) {
                     def mavenCentralUsername = console.readLine("Maven Central Username: ")
                     allprojects { ext."mavenCentralUsername" = mavenCentralUsername }
                 }
 
-                if ( !project.hasProperty('mavenCentralPassword') ) {
+                if ( !project.hasProperty("mavenCentralPassword") ) {
                     def mavenCentralPassword = console.readLine("Maven Central Password: ")
                     allprojects { ext."mavenCentralPassword" = mavenCentralPassword }
                 }
@@ -169,17 +173,17 @@ gradle.taskGraph.whenReady { taskGraph ->
         def console = System.console()
         console.printf "\n\nWe have to sign some things in this build...\n\n"
 
-        if ( !project.hasProperty('signing.keyId') ) {
+        if ( !project.hasProperty("signing.keyId") ) {
             def id = console.readLine("PGP Public Key Id: ")
             allprojects { ext."signing.keyId" = id }
         }
 
-        if ( !project.hasProperty('signing.secretKeyRingFile') ) {
+        if ( !project.hasProperty("signing.secretKeyRingFile") ) {
             def file = console.readLine("PGP Secret Key Ring File (absolute path): ")
             allprojects { ext."signing.secretKeyRingFile" = file }
         }
 
-        if ( !project.hasProperty('signing.password') ) {
+        if ( !project.hasProperty("signing.password") ) {
             def password = console.readPassword("PGP Private Key Password: ")
             allprojects { ext."signing.password" = password }
         }

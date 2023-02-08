@@ -21,6 +21,8 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
 
+import static org.liquibase.gradle.Util.versionAtLeast
+
 /**
  * Gradle task that calls Liquibase to run a command.
  *
@@ -29,19 +31,14 @@ import org.gradle.api.tasks.TaskAction
 class LiquibaseTask extends JavaExec {
 
     /**
-     * The Liquibase command to run.
+     * The Liquibase command to run
      */
     @Input
-    def command
-    /**
-     * Whether or not the command needs a value, such as "tag" or "rollbackCount"
-     */
-    @Input
-    def requiresValue = false
+    LiquibaseCommand liquibaseCommand
 
     @TaskAction
     @Override
-    public void exec() {
+    void exec() {
 
         def activities = project.liquibase.activities
         def runList = project.liquibase.runList
@@ -71,71 +68,23 @@ class LiquibaseTask extends JavaExec {
      * @param activity the activity holding the Liquibase particulars.
      */
     def runLiquibase(activity) {
-        def args = []
-        // liquibase forces to add command params after the the command.  We This list is based off
-        // of the Liquibase code, and reflects the things That liquibase will explicitly look for in
-        // the command params.  Note That when liquibase process a command param, it still sets the
-        // appropriate Main class instance variable, so we don't need to worry too much about
-        // mapping params to commands.
-        def commandParams = [
-                'excludeObjects',
-                'includeObjects',
-                'schemas',
-                'snapshotFormat',
-                'sql',
-                'sqlFile',
-                'delimiter',
-                'rollbackScript'
-        ]
-        activity.arguments.findAll({ !commandParams.contains(it.key) }).each {
-            args += "--${it.key}=${it.value}"
+        def liquibaseVersion = findLiquibaseVersion()
+
+        // Set values on the JavaExec task using the Argument Builder appropriate for the Liquibase
+        // version we have.
+        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
+            setArgs(ArgumentBuilder.buildLiquibaseArgs(project, activity, liquibaseCommand, liquibaseVersion))
+        } else {
+            logger.warn("using legacy argument builder.  Consider updating to Liquibase 4.4+")
+            setArgs(LegacyArgumentBuilder.buildLiquibaseArgs(project, activity, liquibaseCommand, liquibaseVersion))
         }
-
-        if ( command ) {
-            args += command
-        }
-        // Add the command parameters after the command.
-        activity.arguments.findAll({ commandParams.contains(it.key) }).each {
-            args += "--${it.key}=${it.value}"
-        }
-
-
-        def value = project.properties.get("liquibaseCommandValue")
-
-        // Special case for the dbDoc command.  This is the only command that has a default value
-        // in the plugin.
-        if ( !value && command == "dbDoc" ) {
-            value = project.file("${project.buildDir}/database/docs")
-        }
-
-        if ( !value && requiresValue ) {
-            throw new LiquibaseConfigurationException("The Liquibase '${command}' command requires a value")
-        }
-
-        // Unfortunately, due to a bug in liquibase itself
-        // (https://liquibase.jira.com/browse/CORE-2519), we need to put the -D arguments after the
-        // command but before the command argument.  If we put them before the command, they are
-        // ignored, and if we put them after the command value, the --verbose value of the status
-        // command will not be processed correctly.
-        activity.parameters.each {
-            args += "-D${it.key}=${it.value}"
-        }
-
-        // Because of Liquibase CORE-2519, a verbose status only works when --verbose is placed
-        // last.  Fortunately, this doesn't break the other commands, who appear to be able to
-        // handle -D options between the command and the value.
-        if ( value ) {
-            args += value
-        }
-
-        // Set values on the JavaExec task
-        setArgs(args)
 
         def classpath = project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION)
         if ( classpath == null || classpath.isEmpty() ) {
             throw new LiquibaseConfigurationException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
         }
         setClasspath(classpath)
+        fixMainClass(liquibaseVersion)
         // "inherit" the system properties from the Gradle JVM.
         systemProperties System.properties
         println "liquibase-plugin: Running the '${activity.name}' activity..."
@@ -168,72 +117,55 @@ class LiquibaseTask extends JavaExec {
      * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
      * we try to run Liquibase so the property listener can set the class name correctly.
      * <p>
-     * This method detects the resolved version of Liquibase in the liquibaseRuntime configuration
-     * and chooses the right default based on the version it finds.
-     * <p>
-     * If for some reason, it finds Liquibase in the classpath more than once, the last one it
-     * finds, wins.
+     * This method chooses the right default based on the version of liquibase it is given.
+     *
+     * @param liquibaseVersion the version of liquibase we're using.
      */
-    Provider<String> fixMainClass(Configuration configuration) {
-        def customMainClass = project.extensions.findByType(LiquibaseExtension.class).mainClassName
-        if ( customMainClass ) {
+    def fixMainClass(liquibaseVersion) {
+        if ( project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
             project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
-            return objectFactory.property(String.class).value(customMainClass)
+            return
         }
 
-        return providerFactory.provider {
-            configuration.resolvedConfiguration.resolvedArtifacts
-        }.map { artifacts ->
-            def coreDeps = artifacts.findAll { dep ->
-                dep.moduleVersion.id.name == 'liquibase-core'
-            }
-            if (coreDeps.size() > 1) {
-                project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
-            }
-            def foundVersion = coreDeps.last()?.moduleVersion?.id?.version
-            if ( !foundVersion ) {
-                throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
-            } else {
-                project.logger.debug("liquibase-plugin: Found version $foundVersion of liquibase-core.")
-            }
+        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
+            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
+            project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
 
-            if ( lbAtLeast(foundVersion, '4.4') ) {
-                project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
-                return 'liquibase.integration.commandline.LiquibaseCommandLine'
-
-            } else {
-                project.logger.debug("liquibase-plugin: Using the pre 4.4 command line parser.")
-                return 'liquibase.integration.commandline.Main'
-            }
+        } else {
+            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.Main'
+            project.logger.warn("liquibase-plugin: Using the pre 4.4 command line parser.  Consider updating to Liquibase 4.4+")
         }
 
     }
 
     /**
-     * Compare a given Liquibase semver to a target semver and return whether the given semver is
-     * at least the version of the target.
+     * This method detects the resolved version of Liquibase in the liquibaseRuntime configuration
+     * <p>
+     * If for some reason, it finds Liquibase in the classpath more than once, the last one it
+     * finds, wins.
      *
-     * @param givenSemver the version of Liquibase found in the classpath
-     * @param targetSemver the target version to use as a comparison.
-     * @return @{code true} if the given version is greater than or equal to the target semver.
+     * @param project the Gradle project object from which we can get a classpath.
+     * @return the version of Liquibase found
+     * @throws LiquibaseConfigurationException if no version if Liquibase is found at runtime.
      */
-    def lbAtLeast(givenSemver, targetSemver) {
-        List givenVersions = givenSemver.tokenize('.')
-        List targetVersions = targetSemver.tokenize('.')
-
-        def commonIndices = Math.min(givenVersions.size(), targetVersions.size())
-
-        for ( int i = 0; i < commonIndices; ++i ) {
-            def givenNum = givenVersions[i].toInteger()
-            def targetNum = targetVersions[i].toInteger()
-
-            if ( givenNum != targetNum ) {
-                return givenNum > targetNum
+    def findLiquibaseVersion() {
+        def foundVersion
+        def config = project.configurations.liquibaseRuntime
+        config.resolvedConfiguration.resolvedArtifacts.each { dep ->
+            def moduleName = dep.moduleVersion.id.name
+            def moduleVersion = dep.moduleVersion.id.version
+            if ( moduleName == 'liquibase-core' ) {
+                project.logger.debug("liquibase-plugin: Found version ${moduleVersion} of liquibase-core.")
+                if ( foundVersion && foundVersion != moduleVersion ) {
+                    project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
+                }
+                foundVersion = moduleVersion
             }
         }
-
-        // If we got this far then all the common indices are identical, so whichever version is
-        // longer must be more recent
-        return givenVersions.size() > targetVersions.size()
+        if ( !foundVersion ) {
+            throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
+        }
+        return foundVersion
     }
+
 }

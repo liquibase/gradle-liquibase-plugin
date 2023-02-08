@@ -22,9 +22,12 @@ package org.liquibase.gradle
  * @author Steven C. Saliman
  */
 class Activity {
+    /** The name of the activity.  This translates to the name of the block inside "activities". */
     def name
+    /** The arguments to pass with the command, such as username or password. */
     def arguments = [logLevel: 'info']
-    def parameters = [:]
+    /** Changelog parameters.  These are passed to Liquibase via "-D" options */
+    def changeLogParameters = [:]
 
     Activity(String name) {
         this.name = name
@@ -38,21 +41,21 @@ class Activity {
      */
     def changeLogParameters(tokenMap) {
         tokenMap.each {
-            parameters[it.key] = it.value
+            changeLogParameters[it.key] = it.value
         }
     }
 
     /**
      * Used to configure the Liquibase arguments.  The method name is assumed to be a valid
-     * Liquibase argument.  Not worrying about that here is one way we decouple from a particular
-     * version of Liquibase.
+     * Liquibase argument.  Not worrying about validity here is one way we decouple from a
+     * particular version of Liquibase.
      *
      * @param name the name of the Liquibase argument
      * @param args Technically an array, the first value will be taken as the value of the Liquibase
      * argument.
      */
     def methodMissing(String name, args) {
-        arguments[name] = args[0]
+        arguments[name] = args? args[0]: null
     }
 
 }

@@ -1,7 +1,122 @@
-build/
-.gradle/
-*.iml
-*.ipr
-*.iws
+######################
+# Local configuration
+######################
+gradle-local.properties
+
+######################
+# Eclipse
+######################
+*.pydevproject
+.project
+.metadata
+tmp/
+tmp/**/*
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.classpath
+.settings/
+.loadpath
+.factorypath
+/src/main/resources/rebel.xml
+
+# External tool builders
+.externalToolBuilders/**
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# CDT-specific
+.cproject
+
+# PDT-specific
+.buildpath
+
+# STS-specific
+/.sts4-cache/*
+
+######################
+# IntelliJ
+######################
 .idea/
-gradle.properties
+*.iml
+*.iws
+*.ipr
+*.ids
+*.orig
+classes/
+out/
+
+######################
+# Visual Studio Code
+######################
+.vscode/
+
+######################
+# Gradle
+######################
+.gradle/
+/build/
+
+######################
+# Package Files
+######################
+*.jar
+*.war
+*.ear
+*.db
+
+######################
+# Windows
+######################
+# Windows image file caches
+Thumbs.db
+
+# Folder config file
+Desktop.ini
+
+######################
+# Mac OSX
+######################
+.DS_Store
+.svn
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
+
+
+######################
+# Directories
+######################
+/bin/
+/deploy/
+
+######################
+# Logs
+######################
+*.log*
+
+######################
+# Others
+######################
+*.bak
+*.class
+*.lock
+*.swp
+*.*~
+*~
+.merge_file*
+
+###########################
+# Gradle wrapper
+###########################
+# These are exception patterns that must come after the normal patterns.
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+

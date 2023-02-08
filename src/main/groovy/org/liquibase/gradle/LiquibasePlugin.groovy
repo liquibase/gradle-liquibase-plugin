@@ -16,6 +16,7 @@ package org.liquibase.gradle
 
 import org.gradle.api.Project
 import org.gradle.api.Plugin
+import org.liquibase.gradle.liquibase.command.*
 
 class LiquibasePlugin implements Plugin<Project> {
 
@@ -44,85 +45,81 @@ class LiquibasePlugin implements Plugin<Project> {
     }
 
     /**
-     * Create all of the liquibase tasks and add them to the project.  If the
-     * liquibaseTaskPrefix is set, add that prefix to the task names.
+     * Create all of the liquibase tasks and add them to the project.  If the liquibaseTaskPrefix
+     * is set, add that prefix to the task names.
      * @param project the project to enhance
      */
     void applyTasks(Project project) {
-        // Create tasks that don't require a value.
+        // Create the tasks from an array of LiquibaseCommand objects.
         [
-                'changelogSync': 'Mark all changes as executed in the database.',
-                'changelogSyncSql': 'Output the raw SQL used by Liquibase when running changelogSync.',
-                'clearChecksums': 'Remove all saved checksums from the database. On next run checksums will be recomputed.  Useful for "MD5Sum Check Failed" errors.',
-                'deactivateChangeLog': 'Removes the changelogID from your changelog so it stops sending reports to Liquibase Hub.',
-                'diff': 'Compare two databases and write differences to STDOUT.',
-                'diffChangeLog': 'Compare two databases to produce changesets and write them to a changelog file',
-                'dropAll': 'Drop all database objects owned by the user. Note that functions, procedures and packages are not dropped (Liquibase limitation)',
-                'futureRollbackSql': 'Generate the raw SQL needed to rollback undeployed changes.',
-                'generateChangelog': 'Generate a Groovu changelog from the current state of the database.',
-                'history': 'List all deployed changesets and their deployment IDs.',
-                'listLocks': 'List the hostname, IP address, and timestamp of the Liquibase lock record.',
-                'markNextChangesetRan': 'Mark the next change you apply as executed in the database.',
-                'markNextChangesetRanSql': 'Write SQL to mark the next change you apply as executed in the database.',
-                'registerChangeLog': 'Register the changelog with a Liquibase Hub project.',
-                'releaseLocks': 'Remove the Liquibase lock record from the DATABASECHANGELOG table.',
-                'rollbackOneUpdate': 'Rollback one update from the database (Liquibase Pro key required).',
-                'rollbackOneUpdateSql': 'Write SQL to rollback one update from the database (Liquibase Pro key required).',
-                'snapshot': 'Capture the current state of the database.',
-                'snapshotReference': 'Capture the current state of the reference database.',
-                'status': 'Generate a list of pending changesets.',
-                'syncHub': 'Synchronize the local DatabaseChangeLog table with Liquibase Hub.',
-                'unexpectedChangeSets': 'Generate a list of changesets that have been executed but are not in the current changelog.',
-                'update': 'Deploy any changes in the changelog file that have not been deployed.',
-                'updateSql': 'Writes SQL to update the database to the current version to STDOUT.',
-                'updateTestingRollback': 'Updates database, then rolls back changes before updating again. Useful for testing rollback support.',
-                'validate': 'Validate the changelog for errors.'
-        ].each { taskName, taskDescription ->
-            def commandName = taskName
-            if ( project.hasProperty('liquibaseTaskPrefix') ) {
-                taskName = project.liquibaseTaskPrefix + taskName.capitalize()
+                new CalculateChecksumCommand(),
+                new ChangelogSyncCommand(),
+                new ChangelogSyncSqlCommand(),
+                new ChangelogSyncToTagCommand(),
+                new ChangelogSyncToTagSqlCommand(),
+                new ChecksCommand(),
+                new ClearChecksumsCommand(),
+                new DbDocCommand(),
+                new DeactivateChangelogCommand(),
+                new DiffCommand(),
+                new DiffChangelogCommand(),
+                new DropAllCommand(),
+                new ExecuteSqlCommand(),
+                new FutureRollbackCountSqlCommand(),
+                new FutureRollbackFromTagSqlCommand(),
+                new FutureRollbackSqlCommand(),
+                new GenerateChangelogCommand(),
+                new HistoryCommand(),
+                new ListLocksCommand(),
+                new MarkNextChangeSetRanCommand(),
+                new MarkNextChangeSetRanSqlCommand(),
+                new RegisterChangelogCommand(),
+                new ReleaseLocksCommand(),
+                new RollbackCommand(),
+                new RollbackCountCommand(),
+                new RollbackCountSqlCommand(),
+                new RollbackOneChangeSetCommand(),
+                new RollbackOneChangeSetSqlCommand(),
+                new RollbackOneUpdateCommand(),
+                new RollbackOneUpdateSqlCommand(),
+                new RollbackSqlCommand(),
+                new RollbackToDateCommand(),
+                new RollbackToDateSqlCommand(),
+                new SnapshotCommand(),
+                new SnapshotReferenceCommand(),
+                new StatusCommand(),
+                new SyncHubCommand(),
+                new TagCommand(),
+                new TagExistsCommand(),
+                new UnexpectedChangeSetsCommand(),
+                new UpdateCommand(),
+                new UpdateCountCommand(),
+                new UpdateCountSqlCommand(),
+                new UpdateOneChangeSetCommand(),
+                new UpdateOneUpdateSqlCommand(),
+                new UpdateSqlCommand(),
+                new UpdateTestingRollbackCommand(),
+                new UpdateToTagCommand(),
+                new UpdateToTagSqlCommand(),
+                new ValidateCommand()
+        ].each { lbCommand ->
+            // The legacy command is usually just the camel case version of the command, unless
+            // we've been given an override.
+            if ( lbCommand.legacyCommand == null ) {
+                lbCommand.legacyCommand = lbCommand.command.replaceAll("(-)([A-Za-z0-9])", { Object[] it -> it[2].toUpperCase() })
             }
-            project.tasks.register(taskName, LiquibaseTask) {
-                group = 'Liquibase'
-                description = taskDescription
-                command = commandName
-            }
-        }
 
-        // Create tasks that do require a value.
-        [
-                'calculateCheckSum': 'Calculate and print a checksum for the <liquibaseCommandValue> changeset.',
-                'changelogSyncToTag': 'Mark all undeployed changesets up to and including the <liquibaseCommandValue> tag as executed in your database.',
-                'changelogSyncToTagSql': 'Output the raw SQL used by Liquibase when running the changelogSyncToTag command.',
-                'checks': 'Execute the <liquibaseCommandValue> quality check',
-                'dbDoc': 'Generates Javadoc-like documentation for the existing database and changelogs to the <liquibaseCommandValue> directory.',
-                'executeSql': 'Execute a SQL string or file given in <liquibaseCommandValue> in this format: -PliquibaseCommandValue="--sql=select 1" or -PliquibaseCommandValue="--sqlFile=myfile.sql"',
-                'futureRollbackCountSql': 'Generates SQL to sequentially revert <liquibaseCommandValue> changes the database.',
-                'futureRollbackFromTagSql': 'Generates SQL to revert future changes up to the <liquibaseCommandValue> tag.',
-                'rollback': 'Rollback changes made to the database since the the <liquibaseCommandValue> tag was applied.',
-                'rollbackCount': 'Rollback the last <liquibaseCommandValue> changes.',
-                'rollbackCountSql': 'Write SQL to roll back the last <liquibaseCommandValue> changes.',
-                'rollbackOneChangeSet': 'Roll back the specific <liquibaseCommandValue> changeset, without rolling back changesets deployed before or afterwards. (Liquibase Pro key required)',
-                'rollbackOneChangeSetSql': 'Write SQL to roll back the specific <liquibaseCommandValue> changeset, without rolling back changesets deployed before or afterwards. (Liquibase Pro key required)',
-                'rollbackSql': 'Write SQL to roll back the database to the state it was in when the <liquibaseCommandValue> tag was applied.',
-                'rollbackToDate': 'Rollback changes made to the database since the <liquibaseCommandValue> date/time.',
-                'rollbackToDateSql': 'Write SQL to rollback changes made to the database since the <liquibaseCommandValue> date/time.',
-                'tag': 'Mark the current database state with the <liquibaseCommandValue>.',
-                'tagExists': 'Verify the existence of the <liquibaseCommandValue> tag.',
-                'updateCount': 'Deploy the next <liquibaseCommandValue> changes from the changelog file.',
-                'updateCountSql': 'Generate the SQL to deploy the next <liquibaseCommandValue> changes from the changelog file..',
-                'updateToTag': 'Deploy changes from the changelog file to the <liquibaseCommandValue> tag.',
-                'updateToTagSql': 'Generate the SQL to deploy changes from the changelog file to the <liquibaseCommandValue> tag'
-        ].each { taskName, taskDescription ->
-            def commandName = taskName
+            // Match the task name to the legacy command.
+            def taskName = lbCommand.legacyCommand
+
+            // Fix the task name if we have a task prefix.
             if ( project.hasProperty('liquibaseTaskPrefix') ) {
                 taskName = project.liquibaseTaskPrefix + taskName.capitalize()
             }
             project.tasks.register(taskName, LiquibaseTask) {
                 group = 'Liquibase'
-                description = taskDescription
-                command = commandName
-                requiresValue = true
+                description = lbCommand.description
+                liquibaseCommand = lbCommand
             }
         }
     }
