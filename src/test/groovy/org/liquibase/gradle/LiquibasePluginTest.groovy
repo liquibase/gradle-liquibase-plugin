@@ -122,7 +122,7 @@ class LiquibasePluginTest {
     }
 
     private LiquibaseTask configureForVersion(String version, Closure closure = {}) {
-        project.apply plugin: 'liquibase'
+        project.apply plugin: 'org.liquibase.gradle'
         assertTrue("Project is missing plugin", project.plugins.hasPlugin(LiquibasePlugin))
         project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION) {
             dependencies.add(

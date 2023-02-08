@@ -14,7 +14,7 @@ class Util {
      * @param targetSemver the target version to use as a comparison.
      * @return @{code true} if the given version is greater than or equal to the target semver.
      */
-    static def versionAtLeast(givenSemver, targetSemver) {
+    static def versionAtLeast(String givenSemver, String targetSemver) {
         List givenVersions = givenSemver.tokenize('.')
         List targetVersions = targetSemver.tokenize('.')
 
