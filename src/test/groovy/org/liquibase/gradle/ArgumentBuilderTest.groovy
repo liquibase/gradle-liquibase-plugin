@@ -4,6 +4,8 @@ import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Test
+import org.liquibase.gradle.liquibase.command.ExecuteSqlCommand
+import org.liquibase.gradle.liquibase.command.ExecuteSqlFileCommand
 import org.liquibase.gradle.liquibase.command.UpdateCommand
 
 import static org.junit.Assert.assertEquals
@@ -53,7 +55,6 @@ class ArgumentBuilderTest {
         command.commandArguments = ["changelogFile", "username", "force", "includeObjects", "verbose", "tag"]
         command.valueArgument = "tag"
     }
-
 
     /**
      * Test building arguments when we have all the argument types that could exist in a command
@@ -843,4 +844,69 @@ class ArgumentBuilderTest {
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
+
+    /**
+     * Test building arguments when we have all the argument types that could exist in a command
+     * line, and we're dealing with the execute-sql command.  This will test the special handling
+     * of the execute-sql command.  Expect the following arguments in exactly this order:
+     * log-level because the Activity has a default value.
+     * global-arg because global arguments come first.
+     * username with a value
+     * password with a value
+     * execute-sql, which is the command.
+     * --sql with a value because the command value comes last.
+     *
+     * Expect other arguments to be filtered out because the command doesn't support them.
+     */
+    @Test
+    void buildLiquibaseArgsExecuteSql() {
+        command = new ExecuteSqlCommand()
+        project.ext.liquibaseCommandValue = "mySql"
+
+        expectedArgs = [
+                "--log-level=info",
+                "--global-arg=globalValue",
+                "--username=myUsername",
+                "--password=myPassword",
+                "execute-sql",
+                "--sql=mySql"
+        ]
+        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        // For some reason, comparing arrays, doesn't work right, so join into single strings.
+        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
+    }
+
+    /**
+     * Test building arguments when we have all the argument types that could exist in a command
+     * line, and we're dealing with the execute-sql-file command.  This will test the special
+     * handling of the execute-sql-file command.  Expect the following arguments in exactly this
+     * order:
+     * log-level because the Activity has a default value.
+     * global-arg because global arguments come first.
+     * username with a value
+     * password with a value
+     * execute-sql, which proves that "execute-sql-file" will be properly replaced..
+     * --sql-file with a value because the command value comes last.
+     *
+     * Expect other arguments to be filtered out because the command doesn't support them.
+     */
+    @Test
+    void buildLiquibaseArgsExecuteSqlFile() {
+        command = new ExecuteSqlFileCommand()
+        project.ext.liquibaseCommandValue = "mySqlFile"
+
+        expectedArgs = [
+                "--log-level=info",
+                "--global-arg=globalValue",
+                "--username=myUsername",
+                "--password=myPassword",
+                "execute-sql",
+                "--sql-file=mySqlFile"
+        ]
+        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        // For some reason, comparing arrays, doesn't work right, so join into single strings.
+        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
+    }
+
+
 }

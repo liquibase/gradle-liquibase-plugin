@@ -15,10 +15,10 @@ import static org.liquibase.gradle.Util.versionAtLeast
  * <li>The output-file argument, if we've been given an output file.  There are two ways to specify
  * the output file.  The outputFile method in an Activity, or the liquibaseOutputFile property at
  * run time.  The runtime property wins.</li>
- * <li>Command Aarguments that are allowed to come before the command, which includes most
+ * <li>Command Arguments that are allowed to come before the command, which includes most
  * arguments.</li>
  * <li>The Command itself</li>
- * <li>Command Arguments that must cmoe after the command, such as --verbose or --exclude-objects.</li>
+ * <li>Command Arguments that must come after the command, such as --verbose or --exclude-objects.</li>
  * <li>Changelog parameters, which are supplied as "-D" arguments.  This only happens if we are also
  * sending the changelog-file parameter.</li>
  * <li>The command value, if we have one.  If the command has a "valueArgument" the value will be
@@ -123,7 +123,16 @@ class ArgumentBuilder {
         }
 
         liquibaseArgs += preCommandArgs
-        liquibaseArgs += liquibaseCommand.command
+
+        // We need a special case for the execute-sql-file command, which is not a real command.
+        // Replace it with "execute-sql"
+        if ( liquibaseCommand.command == "execute-sql-file") {
+            liquibaseArgs += "execute-sql"
+
+        } else {
+            liquibaseArgs += liquibaseCommand.command
+        }
+
         liquibaseArgs += postCommandArgs
 
         // If we're sending a changelog, we need to also send change log parameters.  Unfortunately,

@@ -2,19 +2,20 @@ package org.liquibase.gradle
 
 /**
  * Base class for representing Liquibase commands.  There will be one class in the
- * {@code liquiabse.command} package for each command Liquibase supports.  Most of them is based on
+ * {@code liquibase.command} package for each command Liquibase supports.  Most of them is based on
  * a matching {@code CommandStep} in Liquibase's {@code liquibase.command.core} package.
  * 
  * @author Steven C. Saliman
  */
 
 abstract class LiquibaseCommand {
-    // These come from collecting all the CommandArgumentDefinition from CommandSteps in LB.
-    // If you add something here, you must add it to the collection later.  LB uses camelCase in
-    // the Java code, which is a nice coincidence since Gradle uses camelCase in its actions.  The
-    // two main changes between Liquibase and this list is that we have a "LABELS" constant to
-    // represent the alias created in any command that uses "LABEL_FILTER", and the URL constant
-    // had to be named something else to avoid a naming conflict with the URL class.
+    // These constants represent the known arguments supported by a Liquibase command.  They come
+    // from collecting all the CommandArgumentDefinition from CommandSteps in LB.  If you add
+    // something here, you must add it to the collection later.  LB uses camelCase in the Java code,
+    // which is a nice coincidence since Gradle uses camelCase in its actions.  The two main changes
+    // between Liquibase and this list is that we have a "LABELS" constant to represent the alias
+    // created in any command that uses "LABEL_FILTER", and the URL constant had to be named
+    // something else to avoid a naming conflict with the URL class.
     static final AUTO_UPDATE = 'autoUpdate'
     static final CHANGELOG_FILE = 'changelogFile'
     static final CHANGE_EXEC_LISTENER_CLASS = 'changeExecListenerClass'

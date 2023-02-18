@@ -58,7 +58,13 @@ class LegacyArgumentBuilder {
             args += "--outputFile=${activity.arguments.outputFile}"
         }
 
-        args += liquibaseCommand.legacyCommand
+        // the "executeSqlFile" command needs some special attention, since it is not a real
+        // command.  It needs to be replaced with "executeSql"
+        if ( liquibaseCommand.legacyCommand == "executeSqlFile") {
+            args += "executeSql"
+        } else {
+            args += liquibaseCommand.legacyCommand
+        }
 
         // Add the post-command arguments after the command.
         activity.arguments.findAll({ postCommandArgs.contains(it.key) }).each {

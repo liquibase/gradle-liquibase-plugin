@@ -65,6 +65,7 @@ class LiquibasePlugin implements Plugin<Project> {
                 new DiffChangelogCommand(),
                 new DropAllCommand(),
                 new ExecuteSqlCommand(),
+                new ExecuteSqlFileCommand(),
                 new FutureRollbackCountSqlCommand(),
                 new FutureRollbackFromTagSqlCommand(),
                 new FutureRollbackSqlCommand(),

@@ -1,24 +1,30 @@
 Liquibase Gradle Plugin
 -----------------------
+
 A plugin for [Gradle](http://gradle.org) that allows you to use [Liquibase](http://liquibase.org)
 to manage your database upgrades.  This project was originally created by Tim Berglund, and is
 currently maintained by Steve Saliman.
 
 News
 ----
+
 **IMPORTANT:** Additional configuration will be required to use version 2.1.0+ of this plugin with
 Liquibase 4.4.0+. Liquibase now uses the picocli library to parse options, but for some reason that
 library isn't a transitive dependency of Liquibase itself, so if you want to use this plugin with
 Liquibase 4.4.0+, you'll have to add the `liquibaseRuntime 'info.picocli:picocli:4.6.1'` dependency
 to your build.gradle file.
 
-### October 20, 2022
+### February 20, 2022
 This version drops support for the older plugin id.  To apply this plugin now, you must use 
 `org.liquibase.gradle`.  
 
 This version of the plugin now sends the newer kebab case commands to Liquibase when it detects
 newer versions in the classpath.  For example, it uses `drop-all` when it detects version 4.4+
-instead of the legacy `dropAll` command that it sends to older versions of Liquibase.
+instead of the legacy `dropAll` command that it sends to older versions of Liquibase.  
+
+This version a new `executeSqlFile` task for executing SQL from a file.  The `executeSql` task now
+only executes the SQL given in the `liquibaseCommandValue` property, and `executeSqlFile` executes
+the SQL given in the filename specified by the `liquibaseCommandValue` property.
 
 This version also adds support for supplying an output file, to tasks that use one, with the 
 `-PliquibaseOutputFile=someFile` property.
@@ -161,6 +167,7 @@ are worth noting:
 
 Usage
 -----
+
 The Liquibase plugin allows you to parse Liquibase changesets using any Liquibase parser that is in
 the classpath when Liquibase runs.  Some parsers, such as the XML parser and the YAML parser, are
 part of Liquibase itself, although some parsers require you to add additional dependencies to the 
@@ -204,6 +211,10 @@ The Liquibase plugin has some subtle differences from the Liquibase command line
       output files.
     - Users can specify `-PliquibaseOutputFile=myFile` to send output to a specific file.  If 
      specified, this command line option always wins.
+
+3. The Liquibase `execute-sql` command works with either SQL strings or SQL files.  The `executeSql`
+  task only supports SQL strings.  The plugin creates an `executeSqlFile` task for running SQL
+  files.  Under the covers, they run the same `execute-sql` command.
 
 There are 3 basic parts to using the Liquibase Gradle Plugin.  Including the plugin, setting up the
 Liquibase runtime dependencies, and configuring the plugin.  Each step is described below.
