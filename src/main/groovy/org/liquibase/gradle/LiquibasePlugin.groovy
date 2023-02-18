@@ -104,14 +104,16 @@ class LiquibasePlugin implements Plugin<Project> {
                 new UpdateToTagSqlCommand(),
                 new ValidateCommand()
         ].each { lbCommand ->
-            // The legacy command is usually just the camel case version of the command, unless
-            // we've been given an override.
-            if ( lbCommand.legacyCommand == null ) {
-                lbCommand.legacyCommand = lbCommand.command.replaceAll("(-)([A-Za-z0-9])", { Object[] it -> it[2].toUpperCase() })
-            }
+            // The default task name is the liquibase command, converted from kebab-case to
+            // camelCase.
+            def taskName = lbCommand.command.replaceAll("(-)([A-Za-z0-9])", { Object[] it -> it[2].toUpperCase() })
 
-            // Match the task name to the legacy command.
-            def taskName = lbCommand.legacyCommand
+            // If the command has a legacy command from the pre 4.4 days, and the user has defined
+            // the liquibaseCreateLegacyTasks property, then the task name should match the old
+            // legacy name instead of the new one.
+            if ( project.hasProperty('liquibaseCreateLegacyTasks') && lbCommand.legacyCommand ) {
+                taskName = lbCommand.legacyCommand
+            }
 
             // Fix the task name if we have a task prefix.
             if ( project.hasProperty('liquibaseTaskPrefix') ) {

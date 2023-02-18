@@ -21,6 +21,10 @@ class LegacyArgumentBuilder {
      * @return the argument string to pass to liquibase when we invoke it.
      */
     static def buildLiquibaseArgs(Project project, Activity activity, LiquibaseCommand liquibaseCommand, liquibaseVersion) {
+        // Start by printing a warning about any activity arguments that will change in Liquibase
+        // 4.4 so that users have some warning before they upgrade Liquibase.
+        printDeprecationWarnings(activity, project)
+
         def args = []
 
         // liquibase forces to add command params after the the command.  We This list is based off
@@ -107,6 +111,32 @@ class LegacyArgumentBuilder {
         }
 
         return args
+    }
+
+    /**
+     * Helper method to go through all the activity's arguments and print deprecation warnings if
+     * any of them are destined to go away in Liquibase 4.4.
+     *
+     * @param activity the activity with the arguments to check
+     * @param project the gradle project, used for logging
+     */
+    static def printDeprecationWarnings(activity, project) {
+        // A map of pre 4.4 names to 4.4+ names.  Each key is the activity method we used to use,
+        // and each value is what we need to use now.
+        def LEGACY_TO_OPTION_MAP = [
+                'changeLogFile'                 : 'changelogFile',
+                'databaseChangeLogLockTableName': 'databaseChangelogLockTableName',
+                'databaseChangeLogTableName'    : 'databaseChangelogTableName',
+                'liquibaseHubApiKey'            : 'hubApiKey',
+                'liquibaseHubUrl'               : 'hubUrl',
+                'liquibaseProLicenseKey'        : 'proLicenseKey',
+        ]
+        activity.arguments.each {
+            def argumentName = it.key
+            if ( LEGACY_TO_OPTION_MAP.containsKey(argumentName) ) {
+                project.logger.warn("liquibase-plugin: The '${argumentName}' has been deprecated in Liquibase 4.4, and will need to be replaced with '${LEGACY_TO_OPTION_MAP[argumentName]}' in your activity.")
+            }
+        }
     }
 
 }

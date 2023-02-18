@@ -9,25 +9,36 @@ News
 ----
 
 **IMPORTANT:** Additional configuration will be required to use version 2.1.0+ of this plugin with
-Liquibase 4.4.0+. Liquibase now uses the picocli library to parse options, but for some reason that
+Liquibase 4.4.0+.  Liquibase now uses the picocli library to parse options, but for some reason that
 library isn't a transitive dependency of Liquibase itself, so if you want to use this plugin with
 Liquibase 4.4.0+, you'll have to add the `liquibaseRuntime 'info.picocli:picocli:4.6.1'` dependency
 to your build.gradle file.
 
 ### February 20, 2022
-This version drops support for the older plugin id.  To apply this plugin now, you must use 
-`org.liquibase.gradle`.  
+This version of the plugin has some important changes
 
-This version of the plugin now sends the newer kebab case commands to Liquibase when it detects
-newer versions in the classpath.  For example, it uses `drop-all` when it detects version 4.4+
-instead of the legacy `dropAll` command that it sends to older versions of Liquibase.  
+- The older plugin id is no longer supported.  To apply this plugin now, you must use  
+  `org.liquibase.gradle`.  
 
-This version a new `executeSqlFile` task for executing SQL from a file.  The `executeSql` task now
-only executes the SQL given in the `liquibaseCommandValue` property, and `executeSqlFile` executes
-the SQL given in the filename specified by the `liquibaseCommandValue` property.
+- The plugin creates tasks that line up with the newer Liquibase 4.4+ commands.  To create tasks
+  that match the older pre 4.4 commands, to support backwards compatibility in CI/CD pipelines for
+  example, simply add `-PliquibaseCreateLegacyTasks` to the gradle command.  This can be done 
+  regardless of the version of Liquibase being used.  This support will be removed in the future.
+  It is helpful to keep in mind that while it is convenient for the task to match the Liquibase
+  commands, it is not necessary, so Liquibase 4.4 tasks can still be used with older versions of
+  Liquibase, the plugin will translate commands and arguments automatically.
 
-This version also adds support for supplying an output file, to tasks that use one, with the 
-`-PliquibaseOutputFile=someFile` property.
+- There is a new `executeSqlFile` task for executing SQL from a file.  The `executeSql` task now
+  only executes the SQL given in the `liquibaseCommandValue` property, and `executeSqlFile` executes
+  the SQL given in the filename specified by the `liquibaseCommandValue` property.
+
+- The plugin now sends the newer kebab case commands to Liquibase when it detects newer versions in
+  of Liquibase in the classpath.  For example, it uses `drop-all` when it detects version 4.4+
+  instead of the legacy `dropAll` command that it sends to older versions of Liquibase.  
+
+- An output file can be specified on the command line, for tasks that use one, with the 
+  `-PliquibaseOutputFile=someFile` property.  This will override the `outputFile` specified in the
+  `activity` block of your build.gradle file.
 
 ### December 20, 2021
 Fixed the Code that detects the version of liquibase in use at the time the liquibase tasks run.  
@@ -312,7 +323,13 @@ parameters.  Any method in an "activity" is assumed to be a Liquibase command li
 example, including `changelogFile 'myfile.groovy'` in an activity does the same thing as
 `--changelog-file=myfile.groovy` would do on the command line.  Including `difftypes 'data'` in an
 activity does the same thing as `difftypes=data` would do on the command line, etc.  The Liquibase
-documentation details all the valid command line parameters.  The `liquibase` block also has an
+documentation details all the valid command line parameters. 
+
+Some arguments changed in Liquibase 4.4, for example, `changeLogFile` became `changelogFile` with a
+lowercase "l".  The plugin will automatically convert pre-4.4 names for a time to support backwards
+compatibility.
+
+The `liquibase` block also has an
 optional "runList", which determines which activities are run for each task.  If no runList is
 defined, the Liquibase Plugin will run all the activities.  NOTE: the order of execution when there
 is no runList is not guaranteed.

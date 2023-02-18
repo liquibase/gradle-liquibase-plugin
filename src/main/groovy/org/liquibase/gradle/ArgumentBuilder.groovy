@@ -167,9 +167,7 @@ class ArgumentBuilder {
      * want to fix the activities block.
      *
      * @param argumentName the name of the argument to process
-     * @param the value of the argument to process.  If this is null, this method assumes we're
-     *         dealing with a boolean argument.
-     * @param liquibaseVersion the version of liquibase we're using.
+     * @param project the gradle project, used for logging
      * @return the name of the argument, as we want to send it to Liquibase.
      */
     static def fixArgumentName(argumentName, project) {
@@ -187,7 +185,7 @@ class ArgumentBuilder {
         def option = argumentName
 
         if ( LEGACY_TO_OPTION_MAP.containsKey(argumentName) ) {
-            project.logger.warn("liquibase-plugin: ${argumentName} has been deprecated.  Please use ${LEGACY_TO_OPTION_MAP[argumentName]} in your activity instead.")
+            project.logger.warn("liquibase-plugin: The '${argumentName}' has been deprecated.  Please use '${LEGACY_TO_OPTION_MAP[argumentName]}' in your activity instead.")
             option = LEGACY_TO_OPTION_MAP[argumentName]
         }
 
