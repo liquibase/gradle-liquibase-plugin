@@ -15,6 +15,7 @@
 package org.liquibase.gradle
 
 import org.gradle.api.Task
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
@@ -33,6 +34,8 @@ class LiquibaseTask extends JavaExec {
      */
     @Input
     LiquibaseCommand liquibaseCommand
+
+    private Provider<String> liquibaseVersionProvider
 
     @TaskAction
     @Override
@@ -66,7 +69,7 @@ class LiquibaseTask extends JavaExec {
      * @param activity the activity holding the Liquibase particulars.
      */
     def runLiquibase(activity) {
-        def liquibaseVersion = findLiquibaseVersion()
+        def liquibaseVersion = liquibaseVersionProvider.get()
 
         // Set values on the JavaExec task using the Argument Builder appropriate for the Liquibase
         // version we have.
@@ -82,11 +85,10 @@ class LiquibaseTask extends JavaExec {
             throw new LiquibaseConfigurationException("No liquibaseRuntime dependencies were defined.  You must at least add Liquibase itself as a liquibaseRuntime dependency.")
         }
         setClasspath(classpath)
-        fixMainClass(liquibaseVersion)
         // "inherit" the system properties from the Gradle JVM.
         systemProperties System.properties
         println "liquibase-plugin: Running the '${activity.name}' activity..."
-        project.logger.debug("liquibase-plugin: The ${getMain()} class will be used to run Liquibase")
+        project.logger.debug("liquibase-plugin: The ${mainClass.get()} class will be used to run Liquibase")
         project.logger.debug("liquibase-plugin: Liquibase will be run with the following jvmArgs: ${project.liquibase.jvmArgs}")
         setJvmArgs(project.liquibase.jvmArgs)
         project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
@@ -103,9 +105,10 @@ class LiquibaseTask extends JavaExec {
      */
     @Override
     Task configure(Closure closure) {
-        conventionMapping("main") {
-            project.extensions.findByType(LiquibaseExtension.class).mainClassName
-        }
+        liquibaseVersionProvider = findLiquibaseVersion()
+        mainClass.set(
+                fixMainClass(liquibaseVersionProvider)
+        )
         return super.configure(closure)
     }
 
@@ -119,21 +122,22 @@ class LiquibaseTask extends JavaExec {
      *
      * @param liquibaseVersion the version of liquibase we're using.
      */
-    def fixMainClass(liquibaseVersion) {
-        if ( project.extensions.findByType(LiquibaseExtension.class).mainClassName ) {
+    Provider<String> fixMainClass(Provider<String> liquibaseVersion) {
+        def customMainClass = project.extensions.findByType(LiquibaseExtension.class).mainClassName
+        if (customMainClass) {
             project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
-            return
+            return objectFactory.property(String.class).value(customMainClass as String)
         }
 
-        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
-            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.LiquibaseCommandLine'
-            project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
-
-        } else {
-            project.extensions.findByType(LiquibaseExtension.class).mainClassName = 'liquibase.integration.commandline.Main'
-            project.logger.warn("liquibase-plugin: Using the pre 4.4 command line parser.  Consider updating to Liquibase 4.4+")
+        return liquibaseVersion.map {
+            if (versionAtLeast(it, '4.4')) {
+                project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
+                return "liquibase.integration.commandline.LiquibaseCommandLine"
+            } else {
+                project.logger.warn("liquibase-plugin: Using the pre 4.4 command line parser.  Consider updating to Liquibase 4.4+")
+                return "liquibase.integration.commandline.Main"
+            }
         }
-
     }
 
     /**
@@ -146,24 +150,24 @@ class LiquibaseTask extends JavaExec {
      * @return the version of Liquibase found
      * @throws LiquibaseConfigurationException if no version if Liquibase is found at runtime.
      */
-    def findLiquibaseVersion() {
-        def foundVersion
+    Provider<String> findLiquibaseVersion() {
         def config = project.configurations.liquibaseRuntime
-        config.resolvedConfiguration.resolvedArtifacts.each { dep ->
-            def moduleName = dep.moduleVersion.id.name
-            def moduleVersion = dep.moduleVersion.id.version
-            if ( moduleName == 'liquibase-core' ) {
-                project.logger.debug("liquibase-plugin: Found version ${moduleVersion} of liquibase-core.")
-                if ( foundVersion && foundVersion != moduleVersion ) {
-                    project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
-                }
-                foundVersion = moduleVersion
+        return providerFactory.provider {
+            config.resolvedConfiguration.resolvedArtifacts
+        }.map { artifacts ->
+            def coreDeps = artifacts.findAll { dep ->
+                dep.moduleVersion.id.name == 'liquibase-core'
+            }
+            if (coreDeps.size() > 1) {
+                project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
+            }
+            def foundVersion = coreDeps.last()?.moduleVersion?.id?.version
+            if ( foundVersion ) {
+                project.logger.debug("liquibase-plugin: Found version ${foundVersion} of liquibase-core.")
+                return foundVersion
+            } else {
+                throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
             }
         }
-        if ( !foundVersion ) {
-            throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
-        }
-        return foundVersion
     }
-
 }
