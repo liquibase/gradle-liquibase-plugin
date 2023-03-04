@@ -9,6 +9,7 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertTrue
+import static org.junit.Assert.fail
 
 class LiquibasePluginTest {
     Project project
@@ -101,35 +102,79 @@ class LiquibasePluginTest {
         assertNull("We shouldn't have an update task", task)
     }
 
+    /**
+     * Confirm that the plugin will set the correct main class name when we put Liquibase 4.4+ in
+     * the class path.
+     */
     @Test
-    void checkVersionDetection() {
-        def task = configureForVersion("4.5.0")
-        assertEquals( "liquibase.integration.commandline.LiquibaseCommandLine", task.mainClass.get())
+    void checkVersionDetectionLiquibase44Plus() {
+        def task = configureForVersion("4.4.0")
+        assertEquals("The plugin set the wrong main class name for Liquibase 4.4+",
+                "liquibase.integration.commandline.LiquibaseCommandLine", task.mainClass.get())
     }
 
+    /**
+     * Confirm that the plugin will set the correct main class name when we put a pre-Liquibase 4.4+
+     * version in the class path.
+     */
     @Test
-    void checkVersionDetection_oldVersion() {
+    void checkVersionDetectionPreLiquibase44() {
         def task = configureForVersion("4.3.0")
-        assertEquals("liquibase.integration.commandline.Main", task.mainClass.get())
+        assertEquals("The plugin set the wrong main class name for Liquibase <4.4",
+                "liquibase.integration.commandline.Main", task.mainClass.get())
     }
 
+    /**
+     * Confirm that, when users set their own main class name, he plugin will use it, regardless of
+     * the version of Liquibase in the class path.
+     */
     @Test
-    void checkVersionDetection_customMainClass() {
+    void checkVersionDetectionCustomMainClass() {
         def task = configureForVersion("4.3.0") {
             (it.extensions.liquibase as LiquibaseExtension).mainClassName = "com.example.CustomMain"
         }
-        assertEquals("com.example.CustomMain", task.mainClass.get())
+        assertEquals("The plugin failed to set the user's specified main class",
+                "com.example.CustomMain", task.mainClass.get())
     }
 
+    /**
+     * Confirm that we get an exception when there is no version of Liquibase in the class path.
+     */
+    @Test
+    void checkVersionDetectionMissingLiquibaseDependency() {
+        def task = configureForVersion(null)
+        try {
+            task.mainClass.get()
+            fail("Failed to throw an exception when Liquibase is not in the class path")
+        } catch (Exception e) {
+            // The provider looking for Liquibase will throw an
+            // AbstractProperty$PropertyQueryException that should be wrapping the
+            // LiquibaseConfigurationException that the plugin throws.  Does it?
+            assertTrue("Wrong Exception when Liquibase is not in the class path",
+                    e.getCause() instanceof LiquibaseConfigurationException)
+        }
+    }
+
+    /**
+     * Helper method to add a specific version of Liquibase to the class path, and perform
+     * additional configuration on the project, and return a LiquibaseTask that can be checked for
+     * a main class name.
+     * @param version the version to include.  If {@code null}, no version of Liquibase will be
+     *         added.
+     * @param closure additional pro configuration to perform before returning the task.
+     * @return a task that tests can use to verify configuration.
+     */
     private LiquibaseTask configureForVersion(String version, Closure closure = {}) {
         project.apply plugin: 'org.liquibase.gradle'
         assertTrue("Project is missing plugin", project.plugins.hasPlugin(LiquibasePlugin))
-        project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION) {
-            dependencies.add(
-                    project.dependencies.create("org.liquibase:liquibase-core:$version")
-            )
+        if ( version != null ) {
+            project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION) {
+                dependencies.add(
+                        project.dependencies.create("org.liquibase:liquibase-core:$version")
+                )
+            }
+            project.repositories.mavenCentral()
         }
-        project.repositories.mavenCentral()
         closure(project)
 
         LiquibaseTask task = project.tasks.findByName('update')

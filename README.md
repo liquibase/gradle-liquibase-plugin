@@ -8,14 +8,18 @@ currently maintained by Steve Saliman.
 News
 ----
 
+**IMPORTANT:** This plugin no longer works with Gradle versions prior to 6.4.
+
 **IMPORTANT:** Additional configuration will be required to use version 2.1.0+ of this plugin with
 Liquibase 4.4.0+.  Liquibase now uses the picocli library to parse options, but for some reason that
 library isn't a transitive dependency of Liquibase itself, so if you want to use this plugin with
 Liquibase 4.4.0+, you'll have to add the `liquibaseRuntime 'info.picocli:picocli:4.6.1'` dependency
 to your build.gradle file.
 
-### February 20, 2022
-This version of the plugin has some important changes
+### March 4, 2023
+**Release 2.2.0 has some important and potentially breaking changes.**
+
+- Gradle 8 is supported, versions prior to 6.4 are no longer supported.
 
 - The older plugin id is no longer supported.  To apply this plugin now, you must use  
   `org.liquibase.gradle`.  

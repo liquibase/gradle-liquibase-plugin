@@ -29,12 +29,11 @@ import static org.liquibase.gradle.Util.versionAtLeast
  */
 class LiquibaseTask extends JavaExec {
 
-    /**
-     * The Liquibase command to run
-     */
+    /** The Liquibase command to run */
     @Input
     LiquibaseCommand liquibaseCommand
 
+    /** a {@code Provider} that can provide a value for the liquibase version. */
     private Provider<String> liquibaseVersionProvider
 
     @TaskAction
@@ -105,32 +104,33 @@ class LiquibaseTask extends JavaExec {
      */
     @Override
     Task configure(Closure closure) {
-        liquibaseVersionProvider = findLiquibaseVersion()
-        mainClass.set(
-                fixMainClass(liquibaseVersionProvider)
-        )
+        this.liquibaseVersionProvider = createLiquibaseVersionProvider()
+        mainClass.set(createMainClassProvider(this.liquibaseVersionProvider))
         return super.configure(closure)
     }
 
     /**
-     * Fix the main class to be used when running Liquibase.  Since we can't call setMain directly
-     * in Gradle 6.4+, we had to register a listener that watched for changes to the extension's
-     * "mainClassName" property.  But if the user didn't set a value, we'll need to set one before
-     * we try to run Liquibase so the property listener can set the class name correctly.
+     * Create a {@code Provider} that can return the the main class to be used when running
+     * Liquibase.  Since we can't call setMain directly in Gradle 6.4+, we had to register a
+     * listener that watched for changes to the extension's "mainClassName" property.  But if the
+     * user didn't set a value, we'll need to set one before we try to run Liquibase so the property
+     * listener can set the class name correctly.
      * <p>
      * This method chooses the right default based on the version of liquibase it is given.
      *
-     * @param liquibaseVersion the version of liquibase we're using.
+     * @param liquibaseVersionProvider a {@code Provider} that can return the version of liquibase
+     *         we're using.
+     * @return a Provider that can return the correct Liquibase main class to use.
      */
-    Provider<String> fixMainClass(Provider<String> liquibaseVersion) {
+    Provider<String> createMainClassProvider(Provider<String> liquibaseVersionProvider) {
         def customMainClass = project.extensions.findByType(LiquibaseExtension.class).mainClassName
-        if (customMainClass) {
+        if ( customMainClass ) {
             project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
             return objectFactory.property(String.class).value(customMainClass as String)
         }
 
-        return liquibaseVersion.map {
-            if (versionAtLeast(it, '4.4')) {
+        return liquibaseVersionProvider.map {
+            if ( versionAtLeast(it, '4.4') ) {
                 project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
                 return "liquibase.integration.commandline.LiquibaseCommandLine"
             } else {
@@ -141,33 +141,37 @@ class LiquibaseTask extends JavaExec {
     }
 
     /**
-     * This method detects the resolved version of Liquibase in the liquibaseRuntime configuration
+     * This method creates a {@code Provider} that detects and returns the resolved version of
+     * Liquibase in the liquibaseRuntime configuration
      * <p>
      * If for some reason, it finds Liquibase in the classpath more than once, the last one it
      * finds, wins.
      *
      * @param project the Gradle project object from which we can get a classpath.
-     * @return the version of Liquibase found
+     * @return a Provider that can return the version of Liquibase found
      * @throws LiquibaseConfigurationException if no version if Liquibase is found at runtime.
      */
-    Provider<String> findLiquibaseVersion() {
+    Provider<String> createLiquibaseVersionProvider() {
         def config = project.configurations.liquibaseRuntime
+        // Make a new provider whose value is the resolved artifact set, then call map, which maps
+        // the artifacts to a version string, returning that version string as the provider's value.
         return providerFactory.provider {
             config.resolvedConfiguration.resolvedArtifacts
         }.map { artifacts ->
             def coreDeps = artifacts.findAll { dep ->
                 dep.moduleVersion.id.name == 'liquibase-core'
             }
-            if (coreDeps.size() > 1) {
-                project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
-            }
-            def foundVersion = coreDeps.last()?.moduleVersion?.id?.version
-            if ( foundVersion ) {
-                project.logger.debug("liquibase-plugin: Found version ${foundVersion} of liquibase-core.")
-                return foundVersion
-            } else {
+
+            if ( coreDeps.size() < 1 ) {
                 throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
             }
+            if ( coreDeps.size() > 1 ) {
+                project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
+            }
+
+            def foundVersion = coreDeps.last()?.moduleVersion?.id?.version
+            project.logger.debug("liquibase-plugin: Found version ${foundVersion} of liquibase-core.")
+            return foundVersion
         }
     }
 }

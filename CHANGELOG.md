@@ -3,11 +3,16 @@ Changes for 2.2.0
 - Removed the old `liquibase` id from the plugin.  The plugin must be applied with its new standard
   id of `org.liquibase.gradle`.
 
+- Changed the way Liquibase tasks are created to line up with the newer Liquibase 4.4+ commands.
+
 - Changed the way Liquibase commands are run. The plugin now sends the correct Liquibase 4.4+
   commands when it detects a newer Liquibase version on the classpath.  In other words, it will
   send `drop-all` for Liquibase 4.4+ instead of the legacy `dropAll` command.
 
 - Added the liquibaseOutputFile property so users can specify output files at runtime.
+
+- Added support for Gradle 8, with thanks to Peter Trifanov (@petertrr), dropped support for Gradle
+  prior to 6.4.
 
 Changes for 2.1.1
 =================
