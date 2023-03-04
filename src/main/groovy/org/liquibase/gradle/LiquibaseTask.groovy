@@ -89,7 +89,7 @@ class LiquibaseTask extends JavaExec {
         println "liquibase-plugin: Running the '${activity.name}' activity..."
         project.logger.debug("liquibase-plugin: The ${mainClass.get()} class will be used to run Liquibase")
         project.logger.debug("liquibase-plugin: Liquibase will be run with the following jvmArgs: ${project.liquibase.jvmArgs}")
-        setJvmArgs(project.liquibase.jvmArgs)
+        jvmArgs(project.liquibase.jvmArgs)
         project.logger.debug("liquibase-plugin: Running 'liquibase ${args.join(" ")}'")
         super.exec()
     }

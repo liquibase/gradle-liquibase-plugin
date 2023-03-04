@@ -372,7 +372,15 @@ liquibase {
 }
 ```
 
-The `liquibase` block can also set two properties; `mainClassName` and `jvmArgs`.
+The `liquibase` block can also set two properties; `mainClassName` and `jvmArgs`. If you are
+using `liquibase` in a subproject structure, do to a limitation in liquibase, you will need to
+override the `user.dir` using the `jvmArgs`. For example:
+
+```groovy
+liquibase {
+  jvmArgs "-Duser.dir=$project.projectDir" 
+}
+```
 
 The `mainClassName` property tells the plugin the name of the class to invoke in order to run
 Liquibase.  By default, the plugin determines the version of Liquibase being used and sets this
