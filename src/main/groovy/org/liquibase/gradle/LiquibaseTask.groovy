@@ -123,13 +123,16 @@ class LiquibaseTask extends JavaExec {
      * @return a Provider that can return the correct Liquibase main class to use.
      */
     Provider<String> createMainClassProvider(Provider<String> liquibaseVersionProvider) {
-        def customMainClass = project.extensions.findByType(LiquibaseExtension.class).mainClassName
-        if ( customMainClass ) {
-            project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
-            return objectFactory.property(String.class).value(customMainClass as String)
-        }
-
+        // map the LiquibaseVersion to a class name
         return liquibaseVersionProvider.map {
+            // If we have a custom class name, it doesn't matter what version of Liquibase we have,
+            // just use the given class name.
+            def customMainClass = project.extensions.findByType(LiquibaseExtension.class).mainClassName
+            if ( customMainClass ) {
+                project.logger.debug("liquibase-plugin: The extension's mainClassName was set, skipping version detection.")
+                return customMainClass as String
+            }
+
             if ( versionAtLeast(it, '4.4') ) {
                 project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
                 return "liquibase.integration.commandline.LiquibaseCommandLine"
