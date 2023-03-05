@@ -21,10 +21,6 @@ class LegacyArgumentBuilder {
      * @return the argument string to pass to liquibase when we invoke it.
      */
     static def buildLiquibaseArgs(Project project, Activity activity, LiquibaseCommand liquibaseCommand, liquibaseVersion) {
-        // Start by printing a warning about any activity arguments that will change in Liquibase
-        // 4.4 so that users have some warning before they upgrade Liquibase.
-        printDeprecationWarnings(activity, project)
-
         def args = []
 
         // liquibase forces to add command params after the the command.  We This list is based off
@@ -46,8 +42,15 @@ class LegacyArgumentBuilder {
 
         def sendingChangeLog = false
 
+        // Create a merged map of activity args and extra args.
+        def argumentMap = createArgumentMap(activity.arguments, project)
+
+        // Start by printing a warning about any activity arguments that will change in Liquibase
+        // 4.4 so that users have some warning before they upgrade Liquibase.
+        printDeprecationWarnings(argumentMap, project)
+
         // Start with the global params (the ones not in our post command argument list)
-        activity.arguments.findAll({ !postCommandArgs.contains(it.key) }).each {
+        argumentMap.findAll({ !postCommandArgs.contains(it.key) }).each {
             if ( it.key.equalsIgnoreCase('changeLogFile') ) {
                 sendingChangeLog = true
             }
@@ -58,8 +61,8 @@ class LegacyArgumentBuilder {
         // property wins over the activity argument.
         if ( project.properties.get("liquibaseOutputFile") ) {
             args += "--outputFile=${project.properties.get('liquibaseOutputFile')}"
-        } else if ( activity.arguments.outputFile ) {
-            args += "--outputFile=${activity.arguments.outputFile}"
+        } else if ( argumentMap.outputFile ) {
+            args += "--outputFile=${argumentMap.outputFile}"
         }
 
         // the "executeSqlFile" command needs some special attention, since it is not a real
@@ -71,7 +74,7 @@ class LegacyArgumentBuilder {
         }
 
         // Add the post-command arguments after the command.
-        activity.arguments.findAll({ postCommandArgs.contains(it.key) }).each {
+        argumentMap.findAll({ postCommandArgs.contains(it.key) }).each {
             // skip the output file, we've already added that
             if ( it.key.equalsIgnoreCase('outputFile') ) {
                 return
@@ -120,7 +123,7 @@ class LegacyArgumentBuilder {
      * @param activity the activity with the arguments to check
      * @param project the gradle project, used for logging
      */
-    static def printDeprecationWarnings(activity, project) {
+    static def printDeprecationWarnings(arguments, project) {
         // A map of pre 4.4 names to 4.4+ names.  Each key is the activity method we used to use,
         // and each value is what we need to use now.
         def LEGACY_TO_OPTION_MAP = [
@@ -131,7 +134,7 @@ class LegacyArgumentBuilder {
                 'liquibaseHubUrl'               : 'hubUrl',
                 'liquibaseProLicenseKey'        : 'proLicenseKey',
         ]
-        activity.arguments.each {
+        arguments.each {
             def argumentName = it.key
             if ( LEGACY_TO_OPTION_MAP.containsKey(argumentName) ) {
                 project.logger.warn("liquibase-plugin: The '${argumentName}' has been deprecated in Liquibase 4.4, and will need to be replaced with '${LEGACY_TO_OPTION_MAP[argumentName]}' in your activity.")
@@ -139,4 +142,34 @@ class LegacyArgumentBuilder {
         }
     }
 
+    /**
+     * Helper method to create an argument map out of an activity's arguments and the extra
+     * arguments passed in via the {@code liquibaseExtraArguments} property.  The output of this
+     * method is a map of argument names and their values.  The extra arguments will be processed
+     * after the activity arguments so that they override whatever was in the activity.
+     * <p>
+     * Extra arguments need to be a comma separated list of argument=value pairs.  Because of
+     * limitations in Gradle, there can be no spaces in this list.
+     *
+     * @param arguments the arguments from the activity
+     * @param project the project, from which we'll get the extra arguments.
+     * @return a map of argument names and their values.
+     */
+    static def createArgumentMap(arguments, project) {
+        def argumentMap = [:]
+        // Start with the activity's arguments
+        arguments.each {
+            argumentMap.put(it.key, it.value)
+        }
+
+        // Now process the extra arguments, if we have any.
+        if ( project.hasProperty("liquibaseExtraArgs") ) {
+            project.liquibaseExtraArgs.split(",").each {
+                def (key, value) = it.split("=")
+                argumentMap.put(key, value)
+            }
+        }
+
+        return argumentMap
+    }
 }

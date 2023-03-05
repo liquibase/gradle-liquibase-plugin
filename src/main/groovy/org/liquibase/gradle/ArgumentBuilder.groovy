@@ -54,9 +54,10 @@ class ArgumentBuilder {
             value = project.file("${project.buildDir}/database/docs")
         }
 
-        // Process each of the arguments from the activity block, figuring out what kind of argument
-        // each one is and responding accordingly.
-        activity.arguments.each {
+        // Create a merged map of activity arguments and extra arguments, then process each of the
+        // arguments from the activity block, figuring out what kind of argument each one is and
+        // responding accordingly.
+        createArgumentMap(activity.arguments, project).each {
             def argumentName = fixArgumentName(it.key, project)
             if ( argumentName == liquibaseCommand.valueArgument ) {
                 // If an activity matches the "value" argument for the command, assume the activity
@@ -157,6 +158,37 @@ class ArgumentBuilder {
 
         return liquibaseArgs
 
+    }
+
+    /**
+     * Helper method to create an argument map out of an activity's arguments and the extra
+     * arguments passed in via the {@code liquibaseExtraArguments} property.  The output of this
+     * method is a map of "fixed" argument names and their values.  The extra arguments will be
+     * processed after the activity arguments so that they override whatever was in the activity.
+     * <p>
+     * Extra arguments need to be a comma separated list of argument=value pairs.  Because of
+     * limitations in Gradle, there can be no spaces in this list.
+     *
+     * @param arguments the arguments from the activity
+     * @param project the project, from which we'll get the extra arguments.
+     * @return a map of argument names and their values.
+     */
+    static def createArgumentMap(arguments, project) {
+        def argumentMap = [:]
+        // Start with the activity's arguments
+        arguments.each {
+            argumentMap.put(fixArgumentName(it.key, project), it.value)
+        }
+
+        // Now process the extra arguments, if we have any.
+        if ( project.hasProperty("liquibaseExtraArgs") ) {
+            project.liquibaseExtraArgs.split(",").each {
+                def (key, value) = it.split("=")
+                argumentMap.put(fixArgumentName(key, project), value)
+            }
+        }
+
+        return argumentMap
     }
 
     /**

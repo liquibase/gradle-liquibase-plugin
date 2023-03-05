@@ -44,6 +44,9 @@ to your build.gradle file.
   `-PliquibaseOutputFile=someFile` property.  This will override the `outputFile` specified in the
   `activity` block of your build.gradle file.
 
+- There is a new `-PliquibaseExtraArguments` property that can be used to override the arguments
+  that the plugin sends to Liquibase.
+
 ### December 20, 2021
 Fixed the Code that detects the version of liquibase in use at the time the liquibase tasks run.  
 
@@ -81,104 +84,6 @@ Release 2.0.4 is a minor release that fixes an issue that was preventing debuggi
 ### May 24, 2020
 Release 2.0.3 is a minor release that fixes an issue caused by changes made in Gradle 6.4.  These
 changes were tested with Gradle 5.4, and are backwards compatible at least that far back.
-
-### November 24, 2019
-Release 2.0.2 of the plugin fixes an issue with some command parameters like the `snapshotFormat`
-parameter of the `snapshot` command, though it should be noted that Liquibase 3.8.1 appears to have
-broken json support for the snapshot command.
-
-### November 23, 2019
-Liquibase released version 3.8.1, which appears to fix the `logLevel` bug in 
-[CORE-3220)](https://liquibase.jira.com/browse/CORE-3220).  It does not fix
-[CORE-3643](https://liquibase.jira.com/browse/CORE-3463), so validateXYZ attributes of a constraint
-still won't work.
-
-Gradle has released version 6.0, and the Liquibase Gradle Plugin appears to work just fine with it.
-
-### September 21, 2019
-Liquibase released versions 3.7 and 3.8.  Neither of which require any changes from the Gradle
-plugin to work properly, but there are three issues with the newer Liquibase versions that could
-affect users of this plugin:
-
-1. Liquibase 3.7+ made a change that broke the Groovy DSL.  If you're using the Groovy DSL for your
-  change sets, you'll need to use version 2.1.0 of the liquibase-groovy parser.
-
-2. Due to a bug in Liquibase ([CORE-3643](https://liquibase.jira.com/browse/CORE-3463)), The Groovy
-  DSL won't be able to parse the new validateXYZ attributes of a constraint.  There is a pull
-  request to fix the issue.
-
-3. Liquibase 3.7 made more changes to the way it does logging which made the console output issues
-  in [CORE-3220)](https://liquibase.jira.com/browse/CORE-3220) even worse, and broke the proxy
-  class I wrote to workaround the issue in Liquibase 3.6.  I've submitted a
-  [Pull Request](https://github.com/liquibase/liquibase/pull/918) to resolve the issue, but until
-  Liquibase is built with the fix, console output will be completely broken in version 3.7+
- 
-### November 24, 2018
-Release 2.0.2 will fix a bug with the plugin's handling of System properties.  All System properties
-that are in effect when Gradle runs Liquibase will now be seen by Liquibase.  Previously, System
-properties were not inherited by the forked JVM that runs Liquibase.
- 
-### September 3, 2018
-Release 2.0.1 is a minor release that removes the CVE-2016-6814 vulnerability by updating the Groovy
-dependency.
-
-### July 14, 2018
-We're pleased to announce the release of version 2.0.0 of the Liquibase Gradle plugin, with much
-thanks to Jasper de Vries (@litpho).  
-
-**This has breaking changes** so please read all the information in this section before upgrading.
-
-Version 2.0.0 Changes the way the plugin sets up the classpath when running Liquibase.  This allows
-us to isolate the classpath Liquibase uses from the one Gradle is using.  Note that this is a
-breaking change!  Builds will not work without first fixing your build scripts to set up the
-classpath. 
-
-Prior to version 2.0.0, you would need to include the plugin and the database drivers in the
-`buildscript` block.  As of version 2.0.0, only the plugin itself needs to be in the `buildscript`
-block.  The database driver, parsers, and any other libraries needed to run Liquibase are now
-specified as `liquibaseRuntime` dependencies in the `dependencies` block of your build file.  In
-addition, the plugin no longer includes the Groovy DSL as a dependency.  If you want to use Groovy
-for your changesets (and why wouldn't you?), the Groovy DSL will also need to be a
-`liquibaseRuntime` dependency, and it will also need to be version `2.0.0` or later if you want to
-use Liquibase versions > 3.4.2.
-
-These changes make it easier to use new versions of Liquibase and the Groovy DSL as they come out
-without having to override what the plugin itself is trying to do.  It also avoids the issues that
-can happen when Liquibase wants different, and conflicting, libraries from what Gradle is using.
-
-In addition to the changes to the way the plugin is configured, there are several other changes that
-are worth noting:
-
-1. There was a bug introduced in version 1.2.2 of the plugin regarding filenames and the
-   `includeAll` change. Version 1.2.2 was incorrectly converting all changeset filenames to absolute
-   paths, a bug that was fixed in version 2.0.0.  If you are updating from version 1.2.1 or earlier,
-   this change should not affect you, but if you've run changes with version 1.2.2 through 1.2.4,
-   you will need to fix some or all of the paths in the DATABASECHANGELOG table before running the
-   2.0.0 version of the plugin.   Failing to do this wil result in Liquibase trying to run the
-   changes again.
-
-2. Liquibase made a change to the checksum logic in version 3.6.0.  According to the Liquibase
-   documentation, Liquibase will just fix the checksums of each change when you run the first update
-   command, but it won't detect changes to any changes that were marked with the `runOnChange`.  If
-   you have any changes that use `runOnChange`, you should run an update once with your old version,
-   then run it again with the new version to fix the checksums.
-
-3. Liquibase changed the `resourceFilter` attribute of the `includeAll` element to just `filter`.
-   Since the 2.0.0 version of the Groovy DSL was built for Liquibase 3.6.x, it will throw an error
-   if it finds the old `resourceFilter` attribute, so you will need to convert any effected change
-   sets.  Note that `includeAll` is one of the few things handled by the DSL itself, so `filter`
-   will still work even if you're using an older version of Liquibase.
-
-4. The `alterSequence` change used to have a `willCycle` attribute.  That attribute is now called
-   `cycle`
-
-5. Liquibase 3.6 appears to have broken console output and disabled the `--logLevel` argument.
-   There is an issue in the Liquibase Jira 
-   ([CORE-3220)](https://liquibase.jira.com/browse/CORE-3220)), but until it gets fixed, you can use
-   a Proxy class in the plugin to enable console output. To use the proxy, simply add
-   `mainClassName = 'org.liquibase.gradle.OutputEnablingLiquibaseRunner'` to your `liquibase` block
-   in `build.gradle`.  This won't fix the problem with the logLevel argument, but you will at least
-   be able to see output.
 
 Usage
 -----
@@ -353,12 +258,14 @@ liquibase {
       url project.ext.mainUrl
       username project.ext.mainUsername
       password project.ext.mainPassword
+      logLevel "info"
     }
     security {
       changelogFile 'src/main/db/security.groovy'
       url project.ext.securityUrl
       username project.ext.securityUsername
       password project.ext.securityPassword
+      logLevel "info"
     }
     diffMain {
       changelogFile 'src/main/db/main.groovy'
@@ -366,21 +273,22 @@ liquibase {
       username project.ext.mainUsername
       password project.ext.mainPassword
       difftypes 'data'
+      logLevel "info"
     }
   }
   runList = project.ext.runList
 }
 ```
 
-The `liquibase` block can also set two properties; `mainClassName` and `jvmArgs`. If you are
-using `liquibase` in a subproject structure, do to a limitation in liquibase, you will need to
-override the `user.dir` using the `jvmArgs`. For example:
+The arguments from an `activity` block can be overriden on the command line using the 
+`liquibaseExtraArgs` property.  For example, if you wanted to override the log level for a single
+run, you could run `gradlew -PliquibaseExtraArgs="logLevel=debug"` and it would print debug messages
+from liquibase.  This property can also be used to add extra arguments that weren't in any 
+`activity` blocks.  Multiple arguments can be specified by separating them with a comma, like this:
+`-PliquibaseExtraArgs="logLevel=debug,username=me`.  Due to limitations of Gradle, there can be no
+spaces in the value of the liquibaseExtraArgs property.
 
-```groovy
-liquibase {
-  jvmArgs "-Duser.dir=$project.projectDir" 
-}
-```
+The `liquibase` block can also set two properties; `mainClassName` and `jvmArgs`. 
 
 The `mainClassName` property tells the plugin the name of the class to invoke in order to run
 Liquibase.  By default, the plugin determines the version of Liquibase being used and sets this
@@ -392,6 +300,17 @@ fixes a Liquibase 3.6 logging issue.  You will need to make sure whatever class 
 
 The `jvmArgs` property tells the plugin what JVM arguments to set when forking the Liquibase
 process, and defaults to an empty array, which is usually fine.
+
+If you are
+using `liquibase` in a subproject structure, due to a limitation in liquibase, you will need to
+override the `user.dir` using the `jvmArgs`. For example:
+
+```groovy
+liquibase {
+  jvmArgs "-Duser.dir=$project.projectDir" 
+}
+```
+
 
 Some things to keep in mind when setting up the `liquibase` block:
 
@@ -427,7 +346,7 @@ Some things to keep in mind when setting up the `liquibase` block:
    
 ```
 liquibase {
-  mainClassName = 'liquibase.ext.commandline.LiquibaseAlternativeMain'
+  mainClassName 'liquibase.ext.commandline.LiquibaseAlternativeMain'
 }
 ```
 

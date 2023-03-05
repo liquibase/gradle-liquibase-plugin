@@ -12,7 +12,12 @@ Changes for 2.2.0
 - Added the liquibaseOutputFile property so users can specify output files at runtime.
 
 - Added support for Gradle 8, with thanks to Peter Trifanov (@petertrr), dropped support for Gradle
-  prior to 6.4.
+  prior to 6.4.  Fixes #91
+
+- Fixed the way we set the JVM arguments, with thanks to @dthompson-galileo.
+
+- Added a `liquibaseExtraArgs` property to override and supplement the arguments in an activity
+  block.  Fixes #106.
 
 Changes for 2.1.1
 =================

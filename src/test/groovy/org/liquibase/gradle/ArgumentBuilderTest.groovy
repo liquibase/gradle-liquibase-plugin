@@ -27,13 +27,17 @@ class ArgumentBuilderTest {
     void setUp() {
         project = ProjectBuilder.builder().build()
         project.ext.liquibaseCommandValue = "myTag"
+        // Set up a "-P" property to pass extra arguments.
+        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
+
         activity = new Activity("main")
 
         // Add some command arguments.  One of them needs to be unsupported, and one needs to be
         // a boolean.
         activity.changelogFile "myChangelog"  // needed to test proper handling of "-D" args
         activity.username "myUsername"
-        activity.password "myPassword"  // This one will be unsupported.
+        activity.password "defaultPassword"  // This one will be overridden.
+        activity.driver "myDriver" // this one will be unsupported.
         activity.force()  // Boolean
 
         // Add some post-command arguments. Like with the pre-command args, we need one unsupported
@@ -42,18 +46,20 @@ class ArgumentBuilderTest {
         activity.includeObjects "myIncludes"
         activity.verbose()  // boolean
 
-        // Add some global arguments.  This can't be anything that exists in LiquiabseCommand.
+        // Add some global arguments.  This can't be anything that exists in LiquibaseCommand.
         activity.globalArg "globalValue"
 
         // some changelog params
         activity.changeLogParameters(["param1": "value1", "param2": "value2"])
 
-        // Set up a command, with supported that exclude the ones marked above as "unsupported"
-        // We'll also set up a valueArgument, but  we won't make it required.
+
+        // Set up a command, with supported arguments that exclude the ones marked above as
+        // "unsupported" We'll also set up a valueArgument, but  we won't make it required.
         command = new UpdateCommand() // We needed a command.  It doesn't matter what it was.
         command.command = "my-command"
-        command.commandArguments = ["changelogFile", "username", "force", "includeObjects", "verbose", "tag"]
+        command.commandArguments = ["changelogFile", "url", "username", "password", "force", "includeObjects", "verbose", "tag"]
         command.valueArgument = "tag"
+
     }
 
     /**
@@ -63,7 +69,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -80,7 +88,9 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -103,7 +113,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -141,7 +153,9 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -164,7 +178,9 @@ class ArgumentBuilderTest {
      * log-level because the Activity has a default value.
      * global-arg because global arguments come first.
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -175,12 +191,14 @@ class ArgumentBuilderTest {
      */
     @Test
     void buildLiquibaseArgsNoChangelog() {
-        command.commandArguments = ["username", "force", "includeObjects", "verbose", "tag"]
+        command.commandArguments = ["url", "username", "password", "force", "includeObjects", "verbose", "tag"]
         expectedArgs = [
                 "--log-level=info",
                 "--global-arg=globalValue",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -202,7 +220,9 @@ class ArgumentBuilderTest {
      * log-level because the Activity has a default value.
      * global-arg because global arguments come first.
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -219,7 +239,9 @@ class ArgumentBuilderTest {
                 "--log-level=info",
                 "--global-arg=globalValue",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "drop-all",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -241,7 +263,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -254,14 +278,16 @@ class ArgumentBuilderTest {
     @Test
     void buildLiquibaseArgsNoValueArg() {
         command.valueArgument = null
-        command.commandArguments = ["changelogFile", "username", "force", "includeObjects", "verbose"]
+        command.commandArguments = ["changelogFile", "url", "username", "password", "force", "includeObjects", "verbose"]
 
         expectedArgs = [
                 "--log-level=info",
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -284,7 +310,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -302,7 +330,9 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -326,7 +356,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -340,13 +372,17 @@ class ArgumentBuilderTest {
     void buildLiquibaseNoCommandValueActivityValueArg() {
         // We can't remove a property, so make a new project without one.
         project = ProjectBuilder.builder().build()
+        // Set up a "-P" property to pass extra arguments.
+        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
         activity.tag "activityTag"
         expectedArgs = [
                 "--log-level=info",
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -369,7 +405,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -383,6 +421,8 @@ class ArgumentBuilderTest {
     void buildLiquibaseNoRequiredValue() {
         // We can't remove a property, so make a new project without one.
         project = ProjectBuilder.builder().build()
+        // Set up a "-P" property to pass extra arguments.
+        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
         command.requiresValue = true
         actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
     }
@@ -396,8 +436,10 @@ class ArgumentBuilderTest {
      * log-level because the Activity has a default value.
      * global-arg because global arguments come first.
      * changelog-file with a value
+     * password with an overridden value
      * username with a value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -411,6 +453,8 @@ class ArgumentBuilderTest {
     void buildLiquibaseNoDbDocCommandValue() {
         // We can't remove a property, so make a new project without one.
         project = ProjectBuilder.builder().build()
+        // Set up a "-P" property to pass extra arguments.
+        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
         // The db-doc command has special handling
         command.command = "db-doc"
         command.valueArgument = "outputDir"
@@ -419,7 +463,9 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "db-doc",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -442,7 +488,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -455,12 +503,16 @@ class ArgumentBuilderTest {
     void buildLiquibaseNoOptionalCommandValue() {
         // We can't remove a property, so make a new project without one.
         project = ProjectBuilder.builder().build()
+        // Set up a "-P" property to pass extra arguments.
+        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
         expectedArgs = [
                 "--log-level=info",
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -482,7 +534,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -500,7 +554,9 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -519,8 +575,10 @@ class ArgumentBuilderTest {
      * log-level because the Activity has a default value.
      * global-arg because global arguments come first.
      * changelog-file with a value
+     * password with an overridden value
      * username with a value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * the two -D parameters.
      * --tag with a value because the command value comes last.
@@ -530,13 +588,15 @@ class ArgumentBuilderTest {
      */
     @Test
     void buildLiquibaseArgsCommandHasNoPostArguments() {
-        command.commandArguments = ["changelogFile", "username", "force", "tag"]
+        command.commandArguments = ["changelogFile", "url", "username", "password", "force", "tag"]
         expectedArgs = [
                 "--log-level=info",
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "-Dparam1=value1",
                 "-Dparam2=value2",
@@ -555,8 +615,10 @@ class ArgumentBuilderTest {
      * log-level because the Activity has a default value.
      * global-arg because global arguments come first.
      * changelog-file with a value
+     * password with an overridden value
      * username with a value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * the two -D parameters.
      * --tag with a value because the command value comes last.
@@ -585,7 +647,9 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "-Dparam1=value1",
                 "-Dparam2=value2",
@@ -605,7 +669,9 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -666,6 +732,8 @@ class ArgumentBuilderTest {
         expectedArgs = [
                 "--log-level=info",
                 "--global-arg=globalValue",
+                "--password=myPassword",  // because extra args has it.
+                "--url=myUrl", // because extra args has it.
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -730,8 +798,51 @@ class ArgumentBuilderTest {
         expectedArgs = [
                 "--log-level=info",
                 "--global-arg=globalValue",
+                "--password=myPassword",  // because extra args has it.
+                "--url=myUrl", // because extra args has it.
                 "my-command",
                 "--tag=myTag"
+        ]
+        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        // For some reason, comparing arrays, doesn't work right, so join into single strings.
+        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
+    }
+
+    /**
+     * Test building arguments when we have no extra args nothing.
+     * line.  Expect the following arguments in exactly this order.
+     * log-level because the Activity has a default value.
+     * global-arg because global arguments come first.
+     * changelog-file with a value
+     * username with a value
+     * password with the default value
+     * force without one
+     * my-command, which is the command.
+     * include-objects with a value
+     * verbose without one
+     * the two -D parameters.
+     * --tag with a value because the command value comes last.
+     *
+     * Expect password and exclude-objects to be filtered out because the command doesn't support
+     * those arguments.
+     */
+    @Test
+    void buildLiquibaseArgsNoExtraArgs() {
+        // new project to clear the command value
+        project = ProjectBuilder.builder().build()
+
+        expectedArgs = [
+                "--log-level=info",
+                "--global-arg=globalValue",
+                "--changelog-file=myChangelog",
+                "--username=myUsername",
+                "--password=defaultPassword", // Because we no longer filter it out
+                "--force",
+                "my-command",
+                "--include-objects=myIncludes",
+                "--verbose",
+                "-Dparam1=value1",
+                "-Dparam2=value2",
         ]
         actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
@@ -767,8 +878,10 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
      * output-file with a value
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -788,7 +901,9 @@ class ArgumentBuilderTest {
                 "--output-file=myFile",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -810,8 +925,10 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * changelog-file with a value
      * username with a value
+     * password with an overridden value
      * force without one
      * output-file with a value
+     * url with a value (after the activity args, because it is an extra arg)
      * my-command, which is the command.
      * include-objects with a value
      * verbose without one
@@ -832,7 +949,9 @@ class ArgumentBuilderTest {
                 "--output-file=myFile",
                 "--changelog-file=myChangelog",
                 "--username=myUsername",
+                "--password=myPassword",
                 "--force",
+                "--url=myUrl",
                 "my-command",
                 "--include-objects=myIncludes",
                 "--verbose",
@@ -853,6 +972,7 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * username with a value
      * password with a value
+     * url with a value (after the activity args, because it is an extra arg)
      * execute-sql, which is the command.
      * --sql with a value because the command value comes last.
      *
@@ -868,6 +988,8 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--username=myUsername",
                 "--password=myPassword",
+                "--driver=myDriver", // because driver is supported by ExecuteSql
+                "--url=myUrl",
                 "execute-sql",
                 "--sql=mySql"
         ]
@@ -885,6 +1007,7 @@ class ArgumentBuilderTest {
      * global-arg because global arguments come first.
      * username with a value
      * password with a value
+     * url with a value (after the activity args, because it is an extra arg)
      * execute-sql, which proves that "execute-sql-file" will be properly replaced..
      * --sql-file with a value because the command value comes last.
      *
@@ -900,6 +1023,8 @@ class ArgumentBuilderTest {
                 "--global-arg=globalValue",
                 "--username=myUsername",
                 "--password=myPassword",
+                "--driver=myDriver", // because driver is supported by ExecuteSqlFile
+                "--url=myUrl",
                 "execute-sql",
                 "--sql-file=mySqlFile"
         ]
@@ -907,6 +1032,5 @@ class ArgumentBuilderTest {
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
-
 
 }
