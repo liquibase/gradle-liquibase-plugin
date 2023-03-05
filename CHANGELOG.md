@@ -19,6 +19,8 @@ Changes for 2.2.0
 - Added a `liquibaseExtraArgs` property to override and supplement the arguments in an activity
   block.  Fixes #106.
 
+- Updated the version of Gradle used to build the project.
+
 Changes for 2.1.1
 =================
 - Fixed the code that auto-detects the version of Liquibase.  Fixed #94
