@@ -36,15 +36,6 @@ if ( isReleaseVersion ) {
     ext.mavenCentralUploadUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
 }
 
-gradlePlugin {
-  plugins {
-    simplePlugin {
-      id = "org.liquibase.gradle"
-      implementationClass = "org.liquibase.gradle.LiquibasePlugin"
-    }
-  }
-}
-
 repositories {
     mavenLocal()
     mavenCentral()
@@ -69,25 +60,20 @@ task groovydocJar(type: Jar, dependsOn: groovydoc) {
     from groovydoc
 }
 
-// Configure the java-gradle-plugin.  Note that the ID must match it's Gradle Plugin Portal id.
+// Configure the plugin.  Note that the ID must match it's Gradle Plugin Portal id.
 // This will screw up Maven publishing, but we'll fix that later.
 gradlePlugin {
+    website = "https://github.com/liquibase/liquibase-gradle-plugin"
+    vcsUrl = "https://github.com/liquibase/liquibase-gradle-plugin.git"
     plugins {
         liquibasePlugin {
             id = "org.liquibase.gradle"
             displayName = "Gradle Liquibase Plugin"
             description = "A Gradle plugin for running the Liquibase database upgrade tool."
             implementationClass = "org.liquibase.gradle.LiquibasePlugin"
+            tags.set(["liquibase", "database"])
         }
     }
-}
-
-// configuration for publishing to the Gradle plugins portal
-pluginBundle {
-    website = "https://github.com/liquibase/liquibase-gradle-plugin"
-    vcsUrl = "https://github.com/liquibase/liquibase-gradle-plugin.git"
-    description = "A Gradle plugin for running the Liquibase database upgrade tool."
-    tags = ["gradle", "liquibase", "database"]
 }
 
 // Configure the maven-publish plugin
