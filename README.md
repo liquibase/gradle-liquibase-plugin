@@ -175,7 +175,7 @@ below:
 ```groovy
 dependencies {
   liquibaseRuntime 'org.liquibase:liquibase-core:4.16.1'
-  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:3.0.0'
+  liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:3.0.2'
   liquibaseRuntime 'info.picocli:picocli:4.6.1'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
 }
