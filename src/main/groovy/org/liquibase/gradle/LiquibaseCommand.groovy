@@ -16,6 +16,7 @@ abstract class LiquibaseCommand {
     // between Liquibase and this list is that we have a "LABELS" constant to represent the alias
     // created in any command that uses "LABEL_FILTER", and the URL constant had to be named
     // something else to avoid a naming conflict with the URL class.
+    static final AUTHOR = 'author'
     static final AUTO_UPDATE = 'autoUpdate'
     static final CHANGELOG_FILE = 'changelogFile'
     static final CHANGE_EXEC_LISTENER_CLASS = 'changeExecListenerClass'
@@ -140,7 +141,8 @@ abstract class LiquibaseCommand {
             INCLUDE_OBJECTS,
             SQL,
             SQL_FILE,
-            VERBOSE
+            VERBOSE,
+            AUTHOR
     ]
 
     /**
