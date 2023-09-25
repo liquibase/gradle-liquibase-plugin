@@ -48,7 +48,8 @@ class DiffChangelogCommand extends LiquibaseCommand {
                 INCLUDE_CATALOG,
                 DIFF_TYPES,
                 DRIVER,
-                DRIVER_PROPERTIES_FILE
+                DRIVER_PROPERTIES_FILE,
+                AUTHOR
         ]
     }
 
