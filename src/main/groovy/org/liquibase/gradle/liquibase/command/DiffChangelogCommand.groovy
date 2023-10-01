@@ -37,6 +37,7 @@ class DiffChangelogCommand extends LiquibaseCommand {
                 USERNAME,
                 PASSWORD,
                 URL_ARG,
+                AUTHOR,
                 DEFAULT_CATALOG_NAME,
                 DEFAULT_SCHEMA_NAME,
                 CHANGELOG_FILE,
@@ -48,8 +49,7 @@ class DiffChangelogCommand extends LiquibaseCommand {
                 INCLUDE_CATALOG,
                 DIFF_TYPES,
                 DRIVER,
-                DRIVER_PROPERTIES_FILE,
-                AUTHOR
+                DRIVER_PROPERTIES_FILE
         ]
     }
 

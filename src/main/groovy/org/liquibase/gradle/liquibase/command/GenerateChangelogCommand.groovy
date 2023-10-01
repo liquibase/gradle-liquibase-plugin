@@ -33,6 +33,7 @@ class GenerateChangelogCommand extends LiquibaseCommand {
                 USERNAME,
                 PASSWORD,
                 URL_ARG,
+                AUTHOR,
                 CHANGELOG_FILE,
                 DATA_OUTPUT_DIRECTORY,
                 EXCLUDE_OBJECTS,

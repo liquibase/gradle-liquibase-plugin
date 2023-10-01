@@ -1,3 +1,8 @@
+Changes for 2.2.1
+=================
+- Added support for the `author` argument of the `diffChangeLog` and `generateChangeLog` commands
+  with thanks to @EggOxygen.
+
 Changes for 2.2.0
 =================
 - Removed the old `liquibase` id from the plugin.  The plugin must be applied with its new standard

@@ -136,13 +136,13 @@ abstract class LiquibaseCommand {
      * argument to the {@code collectArguments} methods of the Liquibase CommandSteps.
      */
     static final POST_COMMAND_ARGUMENTS = [
+            AUTHOR,
             DATA_OUTPUT_DIRECTORY,
             EXCLUDE_OBJECTS,
             INCLUDE_OBJECTS,
             SQL,
             SQL_FILE,
             VERBOSE,
-            AUTHOR
     ]
 
     /**
