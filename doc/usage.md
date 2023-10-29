@@ -3,9 +3,9 @@ Usage
 
 There are 3 basic parts to using the Liquibase Gradle Plugin. 
 
-1. [Including the plugin](#including-the-plugin)
-2. [Setting up the Liquibase runtime dependencies](#setting-up-the-classpath)
-3. [Configuring the plugin](#configuring-the-plugin)
+1. [Including the plugin](#1-including-the-plugin)
+2. [Setting up the Liquibase runtime dependencies](#2-setting-up-the-classpath)
+3. [Configuring the plugin](#3-configuring-the-plugin)
 
 ### 1. Including the plugin
 
