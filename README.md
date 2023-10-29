@@ -11,10 +11,10 @@ page for more information about the releases, including any breaking changes.
 Documentation
 -------------
 
-[Releases](./doc/releases.md)
-[How it works](./doc/changelog.md)
-[Usage](./doc/usage.md)
-[Upgrading Liquibase](./doc/upgrading-liquibase.md)
+- [Releases](./doc/releases.md)
+- [How it works](./doc/changelog.md)
+- [Usage](./doc/usage.md)
+- [Upgrading Liquibase](./doc/upgrading-liquibase.md)
 
 
 

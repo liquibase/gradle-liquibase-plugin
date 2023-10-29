@@ -31,8 +31,8 @@ There are a few things to keep in mind when setting up the `liquibase` block:
 
 Here are a few examples of `liquibase` blocks in the build.gradle file.
 
-[Example 1](#example1): The simple example.
-[Example 2](#example2): Multiple activities.
+- [Example 1](#example1): The simple example.
+- [Example 2](#example2): Multiple activities.
 
 ### Example1
 
