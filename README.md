@@ -16,16 +16,3 @@ Documentation
 - [Usage](./doc/usage.md)
 - [Upgrading Liquibase](./doc/upgrading-liquibase.md)
 
-
-
-
-
-
-
-
-
-
-
-
-
-

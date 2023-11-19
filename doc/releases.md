@@ -12,6 +12,11 @@ to your build.gradle file.
 This page gives the highlights newer releases.  For complete details of each release, including 
 older releases, see the [changelog](./changelog.md).
 
+### Release 2.2.1 (November 19, 2023)
+
+- Added support for the `author` argument of the `diffChangeLog` and `generateChangeLog` commands
+  with thanks to @EggOxygen.
+
 ### Release 2.2.0 (March 4, 2023)
 
 **Release 2.2.0 has some important and potentially breaking changes.**
