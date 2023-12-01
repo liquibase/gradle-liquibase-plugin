@@ -166,7 +166,7 @@ class LiquibaseTask extends JavaExec {
             }
 
             if ( coreDeps.size() < 1 ) {
-                throw new LiquibaseConfigurationException("Liquibase-core was not found  not found in the liquibaseRuntime configuration!")
+                throw new LiquibaseConfigurationException("Liquibase-core was not found in the liquibaseRuntime configuration!")
             }
             if ( coreDeps.size() > 1 ) {
                 project.logger.warn("liquibase-plugin: More than one version of the liquibase-core dependency was found in the liquibaseRuntime configuration!")
