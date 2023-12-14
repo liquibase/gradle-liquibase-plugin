@@ -12,7 +12,7 @@ Documentation
 -------------
 
 - [Releases](./doc/releases.md)
-- [How it works](./doc/changelog.md)
+- [How it works](./doc/how-it-works.md)
 - [Usage](./doc/usage.md)
 - [Upgrading Liquibase](./doc/upgrading-liquibase.md)
 
