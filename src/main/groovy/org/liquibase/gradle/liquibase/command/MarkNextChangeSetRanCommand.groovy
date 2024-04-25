@@ -34,6 +34,9 @@ class MarkNextChangeSetRanCommand extends LiquibaseCommand {
                 DEFAULT_CATALOG_NAME,
                 USERNAME,
                 PASSWORD,
+                LABEL_FILTER,
+                LABELS,
+                CONTEXTS,
                 CHANGELOG_FILE,
                 DRIVER,
                 DRIVER_PROPERTIES_FILE
