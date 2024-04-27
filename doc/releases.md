@@ -12,6 +12,11 @@ to your build.gradle file.
 This page gives the highlights newer releases.  For complete details of each release, including 
 older releases, see the [changelog](./changelog.md).
 
+### Release 2.2.2 (April 27, 2024)
+
+- Added support for the label-filter, labels, adn contexts command arguments to the 
+  `markNextChangeSetRan` and `markNextChangeSetRanSql` tasks, with thanks to @Tylorjg 
+- 
 ### Release 2.2.1 (November 19, 2023)
 
 - Added support for the `author` argument of the `diffChangeLog` and `generateChangeLog` commands

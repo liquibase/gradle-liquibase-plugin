@@ -1,3 +1,8 @@
+Changes for 2.2.2
+=================
+- Added support for the label-filter, labels, adn contexts command arguments to the
+  `markNextChangeSetRan` and `markNextChangeSetRanSql` tasks, with thanks to @Tylorjg
+
 Changes for 2.2.1
 =================
 - Added support for the `author` argument of the `diffChangeLog` and `generateChangeLog` commands
