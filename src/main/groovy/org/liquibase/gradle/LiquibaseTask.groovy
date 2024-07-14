@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2023 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2024 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 
 package org.liquibase.gradle
 
+import liquibase.command.CommandDefinition
 import org.gradle.api.Task
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
@@ -24,6 +25,10 @@ import static org.liquibase.gradle.Util.versionAtLeast
 
 /**
  * Gradle task that calls Liquibase to run a command.
+ * <p>
+ * Liquibase tasks are JavaExec tasks to try to minimize the liquibase dependencies that are in the
+ * Gradle build script's classpath.  Also , we can't use the the Liquibase CommandScope API directly
+ * due to bugs.
  *
  * @author Stven C. Saliman
  */
@@ -31,11 +36,18 @@ class LiquibaseTask extends JavaExec {
 
     /** The Liquibase command to run */
     @Input
-    LiquibaseCommand liquibaseCommand
+    CommandDefinition liquibaseCommand
+
+    /** The argument builder that will build the arguments to sent to Liquiabse. */
+    @Input
+    ArgumentBuilder argumentBuilder
 
     /** a {@code Provider} that can provide a value for the liquibase version. */
     private Provider<String> liquibaseVersionProvider
 
+    /**
+     * Do the work of this task.
+     */
     @TaskAction
     @Override
     void exec() {
@@ -68,16 +80,9 @@ class LiquibaseTask extends JavaExec {
      * @param activity the activity holding the Liquibase particulars.
      */
     def runLiquibase(activity) {
-        def liquibaseVersion = liquibaseVersionProvider.get()
 
-        // Set values on the JavaExec task using the Argument Builder appropriate for the Liquibase
-        // version we have.
-        if ( versionAtLeast(liquibaseVersion, '4.4') ) {
-            setArgs(ArgumentBuilder.buildLiquibaseArgs(project, activity, liquibaseCommand, liquibaseVersion))
-        } else {
-            logger.warn("using legacy argument builder.  Consider updating to Liquibase 4.4+")
-            setArgs(LegacyArgumentBuilder.buildLiquibaseArgs(project, activity, liquibaseCommand, liquibaseVersion))
-        }
+        def args = argumentBuilder.buildLiquibaseArgs(activity, liquibaseCommand)
+        setArgs(args)
 
         def classpath = project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION)
         if ( classpath == null || classpath.isEmpty() ) {
@@ -137,8 +142,7 @@ class LiquibaseTask extends JavaExec {
                 project.logger.debug("liquibase-plugin: Using the 4.4+ command line parser.")
                 return "liquibase.integration.commandline.LiquibaseCommandLine"
             } else {
-                project.logger.warn("liquibase-plugin: Using the pre 4.4 command line parser.  Consider updating to Liquibase 4.4+")
-                return "liquibase.integration.commandline.Main"
+                throw new LiquibaseConfigurationException("The Liquibase gradle plugin doesn't support this version of Liquibase!")
             }
         }
     }

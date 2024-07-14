@@ -46,11 +46,13 @@ Coming Soon
 
 ### 2. Setting up the classpath
 
-The plugin will need to be able to find Liquibase on the classpath when it runs a task, and
-Liquibase will need to be able to find database drivers, changelog parsers, etc. in the classpath.
-This is done by adding `liquibaseRuntime` dependencies to the `dependencies` block in the
-`build.gradle` file.  At a minimum, you'll need to include Liquibase itself along with a database
-driver.  Liquibase 4.4.0+ also requires the picocli library.  We also recommend including the
+The plugin will need to be able to find Liquibase on the classpath when it is applied, and again 
+when it runs a task.  At apply time, the plugin needs to be able to see Liquibase itself.  At
+execution time, Liquibase will need to be able to find database drivers, changelog parsers, etc. in
+the classpath. this is done by adding Liquibase to `buildscript` dependencies, as well as one or
+more `liquibaseRuntime` dependencies to the `dependencies` block in the `build.gradle` file.  At a
+minimum, you'll need to include Liquibase itself along with a database driver.  Liquibase 4.4.0+
+also requires the picocli library.  We also recommend including the
 [Liquibase Groovy DSL](https://github.com/liquibase/liquibase-groovy-dsl) which parses changelogs
 written in an elegant Groovy DSL instead of hurtful XML. An example of `liquibaseRuntime` entries is
 below:
@@ -59,8 +61,16 @@ below:
 <summary><b>Groovy</b></summary>
 
 ```groovy
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'org.liquibase:liquibase-core:4.26.1'
+  }
+}
 dependencies {
-  liquibaseRuntime 'org.liquibase:liquibase-core:4.16.1'
+  liquibaseRuntime 'org.liquibase:liquibase-core:4.26.1'
   liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:3.0.2'
   liquibaseRuntime 'info.picocli:picocli:4.6.1'
   liquibaseRuntime 'mysql:mysql-connector-java:5.1.34'
@@ -194,32 +204,30 @@ documentation tends to use kebab-case for the parameters, which it calls attribu
 plugin, in keeping with Groovy conventions, uses camelCase, and translates as necessary before
 calling Liquibase.
 
-Some parameters changed in Liquibase 4.4, for example, `changeLogFile` became `changelogFile` with a
-lowercase "l".  The plugin will automatically convert pre-4.4 names for a time to support backwards
-compatibility, but will print a warning to update the parameter.
-
 The `liquibase` block also has an
 optional "runList", which determines which activities are run for each task.  If no runList is
 defined, the Liquibase Plugin will run all the activities.  NOTE: the order of execution when there
 is no runList is not guaranteed.
 
-The arguments in `build.gradle` can be overridden on the command line using the `liquibaseExtraArgs`
-property.  For example, if you wanted to override the log level for a single run, you could run
-`gradlew -PliquibaseExtraArgs="logLevel=debug"` and it would print debug messages from liquibase.
-This property can also be used to add extra arguments that weren't in any `activity` blocks.
-Multiple arguments can be specified by separating them with a comma, like this:
-`-PliquibaseExtraArgs="logLevel=debug,username=me`.  Due to limitations of Gradle, spaces are not
-allowed in the value of the liquibaseExtraArgs property.
+The parameters in `build.gradle` can be overridden on the command line using matching Gradle
+properties, capitalized and prefixed with `liquibase`.  For example, if you wanted to override the
+log level for a single run, you could run `gradlew -PliquibaseLogLevel=debug"` and it would print
+debug messages from liquibase.  This can also be used to add extra arguments that weren't in any
+`activity` blocks.  
+
+Liquibase Changelog Parameters can be specified in an activity with the `changelogParameters`
+method.  The method takes a map of key-value pairs to be sent to Liquibase.  They can be specified
+at run time with the `liquibaseChangelogParameters` Gradle property.  Multiple parameters can be
+specified by separating them with a comma, like this:
+`-liquibaseChangelogParameters="param1=value1,param1=value2`.  Due to limitations of Gradle, spaces
+are not allowed in the value of the liquibaseChangelogParameters property.
 
 The `liquibase` block can also set two properties; `mainClassName` and `jvmArgs`.
 
 The `mainClassName` property tells the plugin the name of the class to invoke in order to run
-Liquibase.  By default, the plugin determines the version of Liquibase being used and sets this
-value to either `liquibase.integration.commandline.LiquibaseCommandLine` for version 4.4+, or
-`liquibase.integration.commandline.Main` for earlier versions.  This value can be set to call other
-classes instead, such as the plugin's own `org.liquibase.gradle.OutputEnablingLiquibaseRunner` which
-fixes a Liquibase 3.6 logging issue.  You will need to make sure whatever class you use with
-`mainClassName` can be found in one of the `liquibaseRuntime` dependencies.
+Liquibase.  By default, the plugin uses `liquibase.integration.commandline.LiquibaseCommandLine`.
+This value can be set to call other classes if needed.  You will need to make sure whatever class
+you use with `mainClassName` can be found in one of the `liquibaseRuntime` dependencies.
 
 The `jvmArgs` property tells the plugin what JVM arguments to set when forking the Liquibase
 process, and defaults to an empty array, which is usually fine.

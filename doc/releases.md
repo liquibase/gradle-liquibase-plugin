@@ -1,6 +1,10 @@
 Releases
 --------
 
+**IMPORTANT:** As of version 3.0.0, this plugin no longer works with Liquibase versions prior to
+4.24, and it requires liquibase to be in the `buildscript` classpath, in addition to the 
+`liquibaseRuntime` dependency.
+
 **IMPORTANT:** As of version 2.2.0, this plugin no longer works with Gradle versions prior to 6.4.
 
 **IMPORTANT:** Using version 2.1.0+ of this plugin with Liquibase 4.4.0+ requires additional 
@@ -12,11 +16,64 @@ to your build.gradle file.
 This page gives the highlights newer releases.  For complete details of each release, including 
 older releases, see the [changelog](./changelog.md).
 
+### Release 3.0.0 (July 15, 2024)
+
+- This release finally supports the latest versions of Liquibase, but **NO LONGER SUPPORTS VERSIONS
+  OLDER THAN 4.24**.  
+
+- Liquibase now gets the list of tasks to create from Liquibase itself, which means it needs to a
+  classpath dependency in the `buildscript` block.  This is in addition to being a 
+  `liquibaseRuntime` dependency as before.
+
+- The plugin no longer fixes liquibase  arguments.  What you give it is what will be passed to 
+  Liquibase.  This makes the plugin more flexible as Liquibase changes, but will break if you are
+  still using old arguments.  You will need to fix the following, if you are still using them.
+
+  | old name                       | new name                       |
+  |--------------------------------|--------------------------------|
+  | changeLogFile                  | changelogFile                  |
+  | changeLogParameters            | changelogParameters            |
+  | databaseChangeLogLockTableName | databaseChangelogLockTableName |
+  | databaseChangeLogTableName     | databaseChangelogTableName     |
+  | liquibaseHubApiKey             | hubApiKey                      |
+  | liquibaseHubUrl                | hubUrl                         |
+  | liquibaseProLicenseKey         | proLicenseKey                  |
+
+  The most important change is `changeLogFile`, which is now `changeLogFile`.
+
+- Commands in newer versions of Liquibase no longer have "values" at the end.  All options are 
+  now passed in as regular arguments.  This both simplifies the plugin, and makes it more flexible.
+  The `liquibasecommandValue` Gradle property has been removed, and you can supply the value of any
+  valid Liquibase argument by setting a matching Gradle property, prefixed with `liquibase`.  for 
+  example to run the "tag" task, you can now run `gradlew tag -PliquibaseTag=myTag`.  This also
+  works to override values given in an `activity` block.
+
+  Changelog Parameters can also be supplied this way, but because Gradle only lets you specify a 
+  property once, all parameters need to be in the same property.  For example, 
+  `-PliquibaseChangelogParameters=parm1=value1,param2=value2`, etc.  This plugin will merge the
+  parameters given on the command line with the ones in an activity block.
+
+- The `executeSqlFile` command has been removed.  Use the `executeSql` command with a `sqlFfile` 
+  argument instead.
+
+- Liquibase's arguments can have aliases.  If you specify both an argument and an alias, you're on
+  your own.
+
+- The plugin will ignore arguments that Liquibase doesn't recognize.  This is done for two reasons:
+  1. Arguments in an `activity` block are meant to be defaults.  Not all commands support all 
+    arguments, and it is not an error to skip the ones that don't apply to the command you are 
+    running at the moment.
+  2. Arguments specified as properties on the Gradle command line start with `liquibase`, but not 
+    all properties that start with `liquibase` are meant to be command arguments.  For example,
+    you could use a `liquibaseVersion` property to configure Gradle.  This property is not meant to
+    be used by Liquibase.  By default, the plugin will ignore them silently, but running Gradle with
+    the `--debug` flag will enable logging that shows what properties are being ignored. 
+
 ### Release 2.2.2 (April 27, 2024)
 
-- Added support for the label-filter, labels, adn contexts command arguments to the 
-  `markNextChangeSetRan` and `markNextChangeSetRanSql` tasks, with thanks to @Tylorjg 
-- 
+- Added support for the label-filter, labels, adn contexts command arguments to the
+  `markNextChangeSetRan` and `markNextChangeSetRanSql` tasks, with thanks to @Tylorjg
+
 ### Release 2.2.1 (November 19, 2023)
 
 - Added support for the `author` argument of the `diffChangeLog` and `generateChangeLog` commands

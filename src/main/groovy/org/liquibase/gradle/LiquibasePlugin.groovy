@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2023 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2024 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,9 +14,11 @@
 
 package org.liquibase.gradle
 
+import liquibase.Scope
+import liquibase.command.CommandDefinition
+import liquibase.command.CommandFactory
 import org.gradle.api.Project
 import org.gradle.api.Plugin
-import org.liquibase.gradle.liquibase.command.*
 
 class LiquibasePlugin implements Plugin<Project> {
 
@@ -50,69 +52,20 @@ class LiquibasePlugin implements Plugin<Project> {
      * @param project the project to enhance
      */
     void applyTasks(Project project) {
-        // Create the tasks from an array of LiquibaseCommand objects.
-        [
-                new CalculateChecksumCommand(),
-                new ChangelogSyncCommand(),
-                new ChangelogSyncSqlCommand(),
-                new ChangelogSyncToTagCommand(),
-                new ChangelogSyncToTagSqlCommand(),
-                new ChecksCommand(),
-                new ClearChecksumsCommand(),
-                new DbDocCommand(),
-                new DeactivateChangelogCommand(),
-                new DiffCommand(),
-                new DiffChangelogCommand(),
-                new DropAllCommand(),
-                new ExecuteSqlCommand(),
-                new ExecuteSqlFileCommand(),
-                new FutureRollbackCountSqlCommand(),
-                new FutureRollbackFromTagSqlCommand(),
-                new FutureRollbackSqlCommand(),
-                new GenerateChangelogCommand(),
-                new HistoryCommand(),
-                new ListLocksCommand(),
-                new MarkNextChangeSetRanCommand(),
-                new MarkNextChangeSetRanSqlCommand(),
-                new RegisterChangelogCommand(),
-                new ReleaseLocksCommand(),
-                new RollbackCommand(),
-                new RollbackCountCommand(),
-                new RollbackCountSqlCommand(),
-                new RollbackOneChangeSetCommand(),
-                new RollbackOneChangeSetSqlCommand(),
-                new RollbackOneUpdateCommand(),
-                new RollbackOneUpdateSqlCommand(),
-                new RollbackSqlCommand(),
-                new RollbackToDateCommand(),
-                new RollbackToDateSqlCommand(),
-                new SnapshotCommand(),
-                new SnapshotReferenceCommand(),
-                new StatusCommand(),
-                new SyncHubCommand(),
-                new TagCommand(),
-                new TagExistsCommand(),
-                new UnexpectedChangeSetsCommand(),
-                new UpdateCommand(),
-                new UpdateCountCommand(),
-                new UpdateCountSqlCommand(),
-                new UpdateOneChangeSetCommand(),
-                new UpdateOneUpdateSqlCommand(),
-                new UpdateSqlCommand(),
-                new UpdateTestingRollbackCommand(),
-                new UpdateToTagCommand(),
-                new UpdateToTagSqlCommand(),
-                new ValidateCommand()
-        ].each { lbCommand ->
-            // The default task name is the liquibase command, converted from kebab-case to
-            // camelCase.
-            def taskName = lbCommand.command.replaceAll("(-)([A-Za-z0-9])", { Object[] it -> it[2].toUpperCase() })
+        // Make an argument builder for tasks to share.
+        ArgumentBuilder builder = new ArgumentBuilder(project: project)
+        // Get the commands from the CommandFactory that are not internal, not hidden, and not the
+        // init command.
+        Set<CommandDefinition> commands = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommands(false)
+        def supportedCommands = commands.findAll { !it.hidden && !it.name.contains("init") }
+        supportedCommands.each {  command ->
+            // Let the builder know about the command so it can process arguments later
+            builder.addCommand(command)
 
-            // If the command has a legacy command from the pre 4.4 days, and the user has defined
-            // the liquibaseCreateLegacyTasks property, then the task name should match the old
-            // legacy name instead of the new one.
-            if ( project.hasProperty('liquibaseCreateLegacyTasks') && lbCommand.legacyCommand ) {
-                taskName = lbCommand.legacyCommand
+            // If the command has a nested command, append it to the task name.
+            def taskName = command.name[0]
+            if ( command.name.size() > 1 ) {
+                taskName += command.name[1].capitalize()
             }
 
             // Fix the task name if we have a task prefix.
@@ -121,8 +74,9 @@ class LiquibasePlugin implements Plugin<Project> {
             }
             project.tasks.register(taskName, LiquibaseTask) {
                 group = 'Liquibase'
-                description = lbCommand.description
-                liquibaseCommand = lbCommand
+                description = command.shortDescription
+                liquibaseCommand = command
+                argumentBuilder = builder
             }
         }
     }

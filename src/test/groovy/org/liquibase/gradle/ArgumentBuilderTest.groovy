@@ -1,12 +1,12 @@
 package org.liquibase.gradle
 
+import liquibase.Scope
+import liquibase.command.CommandDefinition
+import liquibase.command.CommandFactory
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Test
-import org.liquibase.gradle.liquibase.command.ExecuteSqlCommand
-import org.liquibase.gradle.liquibase.command.ExecuteSqlFileCommand
-import org.liquibase.gradle.liquibase.command.UpdateCommand
 
 import static org.junit.Assert.assertEquals
 
@@ -22,151 +22,101 @@ class ArgumentBuilderTest {
     def expectedArgs
 
     Project project
+    ArgumentBuilder argumentBuilder
 
     @Before
     void setUp() {
-        project = ProjectBuilder.builder().build()
-        project.ext.liquibaseCommandValue = "myTag"
-        // Set up a "-P" property to pass extra arguments.
-        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
+        // Set up a command that supports our standard database arguments.  We use status because it
+        // supports a boolean argument with an optional value (--verbose)
+        command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("status")
 
+        // Set up an activity that defines some arguments.  Some of them are here to be overridden
+        // by the command line later.
         activity = new Activity("main")
 
-        // Add some command arguments.  One of them needs to be unsupported, and one needs to be
-        // a boolean.
-        activity.changelogFile "myChangelog"  // needed to test proper handling of "-D" args
-        activity.username "myUsername"
-        activity.password "defaultPassword"  // This one will be overridden.
-        activity.driver "myDriver" // this one will be unsupported.
-        activity.force()  // Boolean
-
-        // Add some post-command arguments. Like with the pre-command args, we need one unsupported
-        // and one boolean.
-        activity.excludeObjects "myExcludes"  // unsupported
-        activity.includeObjects "myIncludes"
-        activity.verbose()  // boolean
+        // Add some command arguments.  One of them needs to be unknown to Liquibase, one needs to
+        // be a valid command argument that is not supported by our test command, and one needs to
+        // be a boolean.
+        activity.changelogFile "activityChangelog"  // needed to test proper handling of "-D" args
+        activity.username "activityUsername"
+        activity.password "activityPassword"  // This one will be overridden.
+        activity.verbose()  // boolean used by status
+        activity.includeObjects "activityIncludes" // not supported by he Status command
 
         // Add some global arguments.  This can't be anything that exists in LiquibaseCommand.
-        activity.globalArg "globalValue"
+        activity.globalArg "activityGlobalValue" // this one will be unsupported.
+        activity.logFile "activityLog" // Can't use a logLevel, it has a default.
+        activity.logFormat "activityFormat"  // This will be overridden.
 
         // some changelog params
-        activity.changeLogParameters(["param1": "value1", "param2": "value2"])
+        activity.changelogParameters(["param1": "value1", "param2": "value2"])
+
+        // Simulate a command line with "-P" options by adding them to the project/s ext collection.
+        project = ProjectBuilder.builder().build()
+        project.ext.liquibaseTag = "extTag" // unsupported by command
+        // Set up a "-P" property to pass extra arguments.
+        project.ext.liquibasePassword = "extPassword" // override a command arg
+        project.ext.liquibaseUrl="extUrl" // Supply a new command arg
+        project.ext.liquibaseLogFormat="extFormat" // Override a global arg
+        project.ext.liquibaseClasspath="extClasspath" // supply a new global arg
+        project.ext.liquibaseVersion="extVersion" // invalid global
+
+        // Some changelog parameters from the command line. One overrides an activity parameter,
+        // the other is new.
+        project.ext.liquibaseChangelogParameters="param2=ext2,param3=ext3"
 
 
-        // Set up a command, with supported arguments that exclude the ones marked above as
-        // "unsupported" We'll also set up a valueArgument, but  we won't make it required.
-        command = new UpdateCommand() // We needed a command.  It doesn't matter what it was.
-        command.command = "my-command"
-        command.commandArguments = ["changelogFile", "url", "username", "password", "force", "includeObjects", "verbose", "tag"]
-        command.valueArgument = "tag"
-
+        // Create an ArgumentBuilder and add all the  liquibase commands to it.  This makes our test
+        // more like an integration test, but it is the best we can do since we're coupled to the
+        // Liquibase API anyway.
+        argumentBuilder = new ArgumentBuilder(project: project)
+        Set<CommandDefinition> commands = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommands(false)
+        def supportedCommands = commands.findAll { !it.hidden && !it.name.contains("init") }
+        supportedCommands.each { command ->
+            // Let the builder know about the command so it can process arguments later
+            argumentBuilder.addCommand(command)
+        }
     }
 
     /**
      * Test building arguments when we have all the argument types that could exist in a command
-     * line.  Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
+     * line.  Expect the following arguments in exactly this order:
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-file, with the value from the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * status, which is the command
+     * --changelog-file, with the value from the activity
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
+     * --username, with the value from the activity
+     * --verbose, with no value because the activity didn't specify one
+     * the three -D parameters.
      *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
+     * Expect includeObjects and tag to be filtered out because they are not supported by the
+     * command, and globalArg and version to be filtered out because they aren't supported by
+     * Liquibase
      */
     @Test
     void buildLiquibaseArgsFullArguments() {
         expectedArgs = [
+                "--classpath=extClasspath",
+                "--log-file=activityLog",
+                "--log-format=extFormat",
                 "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
+                "status",
+                "--changelog-file=activityChangelog",
+                "--password=extPassword",
+                "--url=extUrl",
+                "--username=activityUsername",
                 "--verbose",
                 "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=myTag"
+                "-Dparam2=ext2",
+                "-Dparam3=ext3"
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line.  This is the same test as before, except that we use the legacy value for the
-     * changeLogFile in the activity.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test
-    void buildLiquibaseArgsFullArgumentsWithLegacy() {
-        activity = new Activity("main")
-
-        // Add some command arguments.  One of them needs to be unsupported, and one needs to be
-        // a boolean.
-        activity.changeLogFile "myChangelog"  // needed to test proper handling of "-D" args
-        activity.username "myUsername"
-        activity.password "myPassword"  // This one will be unsupported.
-        activity.force()  // Boolean
-
-        // Add some post-command arguments. Like with the pre-command args, we need one unsupported
-        // and one boolean.
-        activity.excludeObjects "myExcludes"  // unsupported
-        activity.includeObjects "myIncludes"
-        activity.verbose()  // boolean
-
-        // Add some global arguments.  This can't be anything that exists in LiquiabseCommand.
-        activity.globalArg "globalValue"
-
-        // some changelog params
-        activity.changeLogParameters(["param1": "value1", "param2": "value2"])
-
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-
     }
 
     /**
@@ -174,37 +124,42 @@ class ArgumentBuilderTest {
      * line, but the command doesn't support the changelog-file.  We should omit "-D" args, because
      * they only get sent with changelog-file.
      *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * --tag with a value because the command value comes last.
+     * The diff task fits that description.
      *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
+     * Expect the following arguments in exactly this order.
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-file, with the value from the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * diff, which is the command
+     * --include-objects, with a value because the diff command supports this one.
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
+     * --username, with the value from the activity
+     *
+     * Expect changelogFile, includeObjects and tag to be filtered out because they are not
+     * supported by the command, globalArg and version to be filtered out because they aren't
+     * supported by Liquibase, and the "-D" arguments should be filtered out because we aren't
+     * sending a changelog.
      */
     @Test
     void buildLiquibaseArgsNoChangelog() {
-        command.commandArguments = ["url", "username", "password", "force", "includeObjects", "verbose", "tag"]
+        // DropAll doesn't send a changelog...
+        command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("diff")
+
         expectedArgs = [
+                "--classpath=extClasspath",
+                "--log-file=activityLog",
+                "--log-format=extFormat",
                 "--log-level=info",
-                "--global-arg=globalValue",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "--tag=myTag"
+                "diff",
+                "--include-objects=activityIncludes",
+                "--password=extPassword",
+                "--url=extUrl",
+                "--username=activityUsername",
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog parms when not using changelog-file?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -217,16 +172,15 @@ class ArgumentBuilderTest {
      * running drop-all.  We should also omit the "-D" args.
      *
      * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * --tag with a value because the command value comes last.
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-file, with the value from the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * diff, which is the command
+     * --include-objects, with a value because the diff command supports this one.
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
+     * --username, with the value from the activity
      *
      * Expect password and exclude-objects to be filtered out because the command doesn't support
      * those arguments.
@@ -234,20 +188,19 @@ class ArgumentBuilderTest {
     @Test
     void buildLiquibaseArgsDropAll() {
         // The drop-all command has special handling.
-        command.command = "drop-all"
+        // DropAll doesn't send a changelog...
+        command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("dropAll")
         expectedArgs = [
+                "--classpath=extClasspath",
+                "--log-file=activityLog",
+                "--log-format=extFormat",
                 "--log-level=info",
-                "--global-arg=globalValue",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
                 "drop-all",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "--tag=myTag"
+                "--password=extPassword",
+                "--url=extUrl",
+                "--username=activityUsername",
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog and changelog parms with drop-all?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -255,273 +208,49 @@ class ArgumentBuilderTest {
 
     /**
      * Test building arguments when we have all the argument types that could exist in a command
-     * line, but the command doesn't have a valueArgument.  In this case, we expect the value
-     * argument to be at the end by itself.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * myTag because the command doesn't have a valueArgument
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test
-    void buildLiquibaseArgsNoValueArg() {
-        command.valueArgument = null
-        command.commandArguments = ["changelogFile", "url", "username", "password", "force", "includeObjects", "verbose"]
-
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line and the activity has a value for the argumentValue too.  This test proves that the
-     * command line wins over the activity.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * myTag because the command doesn't have a valueArgument
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test
-    void buildLiquibaseActivityValueArg() {
-        activity.tag "activityTag"
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments.  Did the command line override the activity value argument?",
-                expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line except for the command value, but the activity does have has a value for the
-     * argumentValue.  This proves we can set default values.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * myTag because the command doesn't have a valueArgument
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test
-    void buildLiquibaseNoCommandValueActivityValueArg() {
-        // We can't remove a property, so make a new project without one.
-        project = ProjectBuilder.builder().build()
-        // Set up a "-P" property to pass extra arguments.
-        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
-        activity.tag "activityTag"
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=activityTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments.  Did we use the command value from the activity?",
-                expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * but we don't set a command value, and a value is required.  Expect an exception.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * myTag because the command doesn't have a valueArgument
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test(expected = LiquibaseConfigurationException)
-    void buildLiquibaseNoRequiredValue() {
-        // We can't remove a property, so make a new project without one.
-        project = ProjectBuilder.builder().build()
-        // Set up a "-P" property to pass extra arguments.
-        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
-        command.requiresValue = true
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line but we don't set a command value for the db-doc command.  This is the only command
+     * line but we don't set an output directory for the db-doc command.  This is the only command
      * that has a default value.
      *
      * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * password with an overridden value
-     * username with a value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * output-dir with the default value
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-file, with the value from the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * status, which is the command
+     * --changelog-file, with the value from the activity
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
+     * --username, with the value from the activity
+     * --output-directory, with a default value. It is here because the special handling comes
+     *     after we process the other args.
+     * the three -D parameters.  These are always last.
      *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
+     * Expect includeObjects and tag to be filtered out because they are not supported by the
+     * command, and globalArg and version to be filtered out because they aren't supported by
+     * Liquibase
      */
     @Test
-    void buildLiquibaseNoDbDocCommandValue() {
-        // We can't remove a property, so make a new project without one.
-        project = ProjectBuilder.builder().build()
-        // Set up a "-P" property to pass extra arguments.
-        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
+    void buildLiquibaseDbDocWithoutDir() {
         // The db-doc command has special handling
-        command.command = "db-doc"
-        command.valueArgument = "outputDir"
+        command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("dbDoc")
         expectedArgs = [
+                "--classpath=extClasspath",
+                "--log-file=activityLog",
+                "--log-format=extFormat",
                 "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
                 "db-doc",
-                "--include-objects=myIncludes",
-                "--verbose",
+                "--changelog-file=activityChangelog",
+                "--password=extPassword",
+                "--url=extUrl",
+                "--username=activityUsername",
+                "--output-directory=${project.buildDir}/database/docs",
                 "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--output-dir=${project.buildDir}/database/docs"
+                "-Dparam2=ext2",
+                "-Dparam3=ext3"
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we use the default value for output-dir with db-doc?",
-                expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * but we don't set a command value for a command doesn't require one.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test
-    void buildLiquibaseNoOptionalCommandValue() {
-        // We can't remove a property, so make a new project without one.
-        project = ProjectBuilder.builder().build()
-        // Set up a "-P" property to pass extra arguments.
-        project.ext.liquibaseExtraArgs = "password=myPassword,url=myUrl"
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments.",
                 expectedArgs.join(" "),  actualArgs.join(" "))
     }
 
@@ -530,245 +259,40 @@ class ArgumentBuilderTest {
      * line, but no changelog parameters.
      *
      * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-file, with the value from the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * status, which is the command
+     * --changelog-file, with the value from the activity
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
+     * --username, with the value from the activity
+     * --verbose, with no value because the activity didn't specify one
+     * the 2 -D params that came from the command line.
      *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
+     * Expect includeObjects and tag to be filtered out because they are not supported by the
+     * command, and globalArg and version to be filtered out because they aren't supported by
+     * Liquibase
      */
     @Test
     void buildLiquibaseArgsNoChangeLogParms() {
-        activity.changeLogParameters.clear()
+        activity.changelogParameters.clear()
         expectedArgs = [
+                "--classpath=extClasspath",
+                "--log-file=activityLog",
+                "--log-format=extFormat",
                 "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
+                "status",
+                "--changelog-file=activityChangelog",
+                "--password=extPassword",
+                "--url=extUrl",
+                "--username=activityUsername",
                 "--verbose",
-                "--tag=myTag"
+                "-Dparam2=ext2",
+                "-Dparam3=ext3"
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line, but the command doesn't support any post-command arguments.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * password with an overridden value
-     * username with a value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test
-    void buildLiquibaseArgsCommandHasNoPostArguments() {
-        command.commandArguments = ["changelogFile", "url", "username", "password", "force", "tag"]
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line except for post-command arguments.  Not having any should not cause problems
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * password with an overridden value
-     * username with a value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
-     */
-    @Test
-    void buildLiquibaseArgsNoActivityPostCommandArgs() {
-        activity = new Activity("main")
-
-        // Add some command arguments.  One of them needs to be unsupported, and one needs to be
-        // a boolean.
-        activity.changelogFile "myChangelog"  // needed to test proper handling of "-D" args
-        activity.username "myUsername"
-        activity.password "myPassword"  // This one will be unsupported.
-        activity.force()  // Boolean
-
-        // Add some global arguments.  This can't be anything that exists in LiquiabseCommand.
-        activity.globalArg "globalValue"
-
-        // some changelog params
-        activity.changeLogParameters(["param1": "value1", "param2": "value2"])
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line, but the command doesn't support any pre-command arguments.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.  Also expect the changelog parameters (-D) to be filtered out because the
-     * changelog-file was filtered out.
-     */
-    @Test
-    void buildLiquibaseArgsNoPreCommandArgsSupported() {
-        command.commandArguments = ["includeObjects", "verbose", "tag"]
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line, except that the activity doesn't provide any pre-command arguments.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * --tag with a value because the command value comes last.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.  Also expect the changelog parameters (-D) to be filtered out because the
-     * changelog-file was filtered out.
-     */
-    @Test
-    void buildLiquibaseArgsActivityHasNoPreCommandArgs() {
-        activity = new Activity("main")
-
-        // Add some post-command arguments. Like with the pre-command args, we need one unsupported
-        // and one boolean.
-        activity.excludeObjects "myExcludes"  // unsupported
-        activity.includeObjects "myIncludes"
-        activity.verbose()  // boolean
-
-        // Add some global arguments.  This can't be anything that exists in LiquiabseCommand.
-        activity.globalArg "globalValue"
-
-        // some changelog params
-        activity.changeLogParameters(["param1": "value1", "param2": "value2"])
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--password=myPassword",  // because extra args has it.
-                "--url=myUrl", // because extra args has it.
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line, but the command doesn't support any command arguments at all.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * my-command, which is the command.
-     * the "myTag" value without a keyword because there isn't a valueARgument anymore.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.  Also expect the changelog parameters (-D) to be filtered out because the
-     * changelog-file was filtered out.
-     */
-    @Test
-    void buildLiquibaseArgsCommandSupportsNoArguments() {
-        command.commandArguments = []
-        command.valueArgument = null
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "my-command",
-                "myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -777,74 +301,70 @@ class ArgumentBuilderTest {
      * Test building arguments when we the activity doesn't define any arguments at all.
      *
      * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * my-command, which is the command.
-     * the "myTag" value without a keyword because there isn't a valueARgument anymore.
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * status, which is the command
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
      *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.  Also expect the changelog parameters (-D) to be filtered out because the
-     * changelog-file was filtered out.
+     * Expect includeObjects and tag to be filtered out because they are not supported by the
+     * command, and globalArg and version to be filtered out because they aren't supported by
+     * Liquibase.  We also expect the usual values from the activity to be filtered out because we
+     * aren't setting any activity arguments.
      */
     @Test
     void buildLiquibaseArgsActivityHasNoArgs() {
         activity = new Activity("main")
 
-        // Add some global arguments.  This can't be anything that exists in LiquiabseCommand.
-        activity.globalArg "globalValue"
-
-        // some changelog params
-        activity.changeLogParameters(["param1": "value1", "param2": "value2"])
         expectedArgs = [
+                "--classpath=extClasspath",
+                "--log-format=extFormat",
                 "--log-level=info",
-                "--global-arg=globalValue",
-                "--password=myPassword",  // because extra args has it.
-                "--url=myUrl", // because extra args has it.
-                "my-command",
-                "--tag=myTag"
+                "status",
+                "--password=extPassword",
+                "--url=extUrl"
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
 
     /**
-     * Test building arguments when we have no extra args nothing.
+     * Test building arguments when we have no command line arguments.
      * line.  Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with the default value
-     * force without one
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
+     * --log-file, with the value from the activity
+     * --log-format, with the value from the activity
+     * --log-level=info, because it is global and the Activity has a default value
+     * status, which is the command
+     * --changelog-file, with the value from the activity
+     * --password, with the value from the activity
+     * --username, with the value from the activity
+     * --verbose, with no value because the activity didn't specify one
+     * the two -D parameters that came from the activity.
      *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments.
+     * Expect includeObjects and tag to be filtered out because they are not supported by the
+     * command, and globalArg and version to be filtered out because they aren't supported by
+     * Liquibase.  We also won't have a classpath or url because we no longer supply one.
      */
     @Test
     void buildLiquibaseArgsNoExtraArgs() {
         // new project to clear the command value
-        project = ProjectBuilder.builder().build()
+        argumentBuilder.project = ProjectBuilder.builder().build()
 
         expectedArgs = [
+                "--log-file=activityLog",
+                "--log-format=activityFormat", // because we no longer override it
                 "--log-level=info",
-                "--global-arg=globalValue",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=defaultPassword", // Because we no longer filter it out
-                "--force",
-                "my-command",
-                "--include-objects=myIncludes",
+                "status",
+                "--changelog-file=activityChangelog",
+                "--password=activityPassword", // because we no longer override it
+                "--username=activityUsername",
                 "--verbose",
                 "-Dparam1=value1",
-                "-Dparam2=value2",
+                "-Dparam2=value2"
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -855,182 +375,17 @@ class ArgumentBuilderTest {
     @Test
     void buildLiquibaseArgsWithNothing() {
         // new project to clear the command value
-        project = ProjectBuilder.builder().build()
+        argumentBuilder.project = ProjectBuilder.builder().build()
         // new activity and we'll even clear out the default argument.
         activity = new Activity("main")
-        activity.changeLogParameters = [:]
+        activity.changelogParameters = [:]
         activity.arguments = [:]
 
         expectedArgs = [
-                "my-command",
+                "status",
         ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line, and the activity defines an output file.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * output-file with a value
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments, and the output-file goes after global arguments because it is a global
-     * argument in Liquibase.
-     */
-    @Test
-    void buildLiquibaseArgsOutputFileInActivity() {
-        activity.outputFile "myFile"
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--output-file=myFile",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments.  Did we forget to add the output file?", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line.
-     *
-     * Expect the following arguments in exactly this order.
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * changelog-file with a value
-     * username with a value
-     * password with an overridden value
-     * force without one
-     * output-file with a value
-     * url with a value (after the activity args, because it is an extra arg)
-     * my-command, which is the command.
-     * include-objects with a value
-     * verbose without one
-     * the two -D parameters.
-     * --tag with a value because the command value comes last.
-     *
-     * Expect password and exclude-objects to be filtered out because the command doesn't support
-     * those arguments, and the output-file goes after global arguments because it is a global
-     * argument in Liquibase.
-     */
-    @Test
-    void buildLiquibaseArgsOutputFileInProperties() {
-        project.ext.liquibaseOutputFile = "myFile"
-        activity.outputFile "activityFile"
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--output-file=myFile",
-                "--changelog-file=myChangelog",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--force",
-                "--url=myUrl",
-                "my-command",
-                "--include-objects=myIncludes",
-                "--verbose",
-                "-Dparam1=value1",
-                "-Dparam2=value2",
-                "--tag=myTag"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line, and we're dealing with the execute-sql command.  This will test the special handling
-     * of the execute-sql command.  Expect the following arguments in exactly this order:
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * username with a value
-     * password with a value
-     * url with a value (after the activity args, because it is an extra arg)
-     * execute-sql, which is the command.
-     * --sql with a value because the command value comes last.
-     *
-     * Expect other arguments to be filtered out because the command doesn't support them.
-     */
-    @Test
-    void buildLiquibaseArgsExecuteSql() {
-        command = new ExecuteSqlCommand()
-        project.ext.liquibaseCommandValue = "mySql"
-
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--driver=myDriver", // because driver is supported by ExecuteSql
-                "--url=myUrl",
-                "execute-sql",
-                "--sql=mySql"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    /**
-     * Test building arguments when we have all the argument types that could exist in a command
-     * line, and we're dealing with the execute-sql-file command.  This will test the special
-     * handling of the execute-sql-file command.  Expect the following arguments in exactly this
-     * order:
-     * log-level because the Activity has a default value.
-     * global-arg because global arguments come first.
-     * username with a value
-     * password with a value
-     * url with a value (after the activity args, because it is an extra arg)
-     * execute-sql, which proves that "execute-sql-file" will be properly replaced..
-     * --sql-file with a value because the command value comes last.
-     *
-     * Expect other arguments to be filtered out because the command doesn't support them.
-     */
-    @Test
-    void buildLiquibaseArgsExecuteSqlFile() {
-        command = new ExecuteSqlFileCommand()
-        project.ext.liquibaseCommandValue = "mySqlFile"
-
-        expectedArgs = [
-                "--log-level=info",
-                "--global-arg=globalValue",
-                "--username=myUsername",
-                "--password=myPassword",
-                "--driver=myDriver", // because driver is supported by ExecuteSqlFile
-                "--url=myUrl",
-                "execute-sql",
-                "--sql-file=mySqlFile"
-        ]
-        actualArgs = ArgumentBuilder.buildLiquibaseArgs(project, activity, command, "4.4.0")
-        // For some reason, comparing arrays, doesn't work right, so join into single strings.
-        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
 }

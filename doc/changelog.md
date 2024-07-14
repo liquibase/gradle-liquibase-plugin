@@ -1,3 +1,9 @@
+Changes for 3.0.0
+=================
+- The Liquibase Groovy Plugin now supports Liquibase 4.24+.  **THIS IS A BREAKING CHANGE!**.  This
+  plugin is known to be broken on versions prior to 4.24.  It now uses Liquibase's CommandScope and
+  LiquibaseConfiguration apis to discover the supported tasks and their arguments.
+  
 Changes for 2.2.2
 =================
 - Added support for the label-filter, labels, adn contexts command arguments to the

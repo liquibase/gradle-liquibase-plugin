@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2023 Tim Berglund and Steven C. Saliman
+ * Copyright 2011-2024 Tim Berglund and Steven C. Saliman
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -15,19 +15,28 @@
 package org.liquibase.gradle
 
 /**
- * This class represents a single activity that must be performed as part of a liquibase task.  It
+ * This class represents a single activity that can be performed as part of a liquibase task.  It
  * is basically the intersection of changelogs and databases. Each named activity in the
  * {@code activities} closure of the {@code liquibase} block will create one of these objects.
  *
  * @author Steven C. Saliman
  */
 class Activity {
-    /** The name of the activity.  This translates to the name of the block inside "activities". */
+    /**
+     * The name of the activity.  This translates to the name of the block inside "activities".
+     */
     def name
-    /** The arguments to pass with the command, such as username or password. */
+
+    /**
+     * The arguments to pass with the command, such as username or password.  We'll add a default
+     * value for the logLevel argument.
+     */
     def arguments = [logLevel: 'info']
-    /** Changelog parameters.  These are passed to Liquibase via "-D" options */
-    def changeLogParameters = [:]
+
+    /**
+     * Changelog parameters.  These are passed to Liquibase via "-D" options
+     */
+    def changelogParameters = [:]
 
     Activity(String name) {
         this.name = name
@@ -39,16 +48,16 @@ class Activity {
      *
      * @param tokenMap the map of tokens and their values.
      */
-    def changeLogParameters(tokenMap) {
+    def changelogParameters(tokenMap) {
         tokenMap.each {
-            changeLogParameters[it.key] = it.value
+            changelogParameters[it.key] = it.value
         }
     }
 
     /**
-     * Used to configure the Liquibase arguments.  The method name is assumed to be a valid
-     * Liquibase argument.  Not worrying about validity here is one way we decouple from a
-     * particular version of Liquibase.
+     * Used to configure the Liquibase arguments  in this activity.  The method name is assumed to
+     * be a valid Liquibase argument.  Not worrying about validity here is one way we decouple
+     * ourselves from any particular version of Liquibase.
      *
      * @param name the name of the Liquibase argument
      * @param args Technically an array, the first value will be taken as the value of the Liquibase

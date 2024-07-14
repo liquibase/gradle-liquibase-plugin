@@ -42,9 +42,12 @@ repositories {
 }
 
 dependencies {
-    implementation localGroovy()
-    implementation gradleApi()
-    implementation "org.codehaus.groovy:groovy:${groovyVersion}"
+    compileOnly localGroovy()
+    compileOnly gradleApi()
+    compileOnly "org.codehaus.groovy:groovy:${groovyVersion}"
+    compileOnly "org.liquibase:liquibase-core:${liquibaseCoreVersion}"
+    // implementation "org.liquibase:liquibase-standard:${liquibaseCoreVersion}"
+    testImplementation "org.liquibase:liquibase-core:${liquibaseCoreVersion}"
     testImplementation "junit:junit:${junitVersion}"
 }
 

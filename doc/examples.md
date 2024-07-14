@@ -15,19 +15,15 @@ There are a few things to keep in mind when setting up the `liquibase` block:
    and not an array.
 
 3. The methods in each activity block are meant to be pass-throughs to Liquibase.  Any valid
-   Liquibase command parameter is a legal method here.  The command parameters are parameters in the
-   Liquibase documentation that start with a `--` such as `--difftypes` or `--logLevel`.  For
-   example, if you wanted to increase the log level, you could add `logLevel 'debug'` to the
-   activity.
+   Liquibase command parameter or global parameter is a legal method here.  The parameters are
+   parameters in the Liquibase documentation that start with a `--` such as `--difftypes` or
+   `--log-level`.  For example, if you wanted to increase the log level, you could add
+   `logLevel 'debug'` to the activity.  Remember that kebab-case arguments from the documentation
+   become camelCase in the plugin.
 
-4. In addition to the command pass-through methods of an activity, there is a `changeLogParameters`
-   method.  This method takes a map, and is used to set up token substitution in the changeLogs.  See
-   the Liquibase documentation for more details on token substitution.
-
-5. Some Liquibase commands like `tag` and `rollback` require a value, in this case a tag name.  
-   Since the value will likely change from run to run, the command value is not configured in the
-   `liquibase` block.  To supply a command value, add `-PliquibaseCommandValue=<value>` to the
-   gradle command.
+4. In addition to the command pass-through methods of an activity, there is a `changelogParameters`
+   method.  This method takes a map, and is used to set up token substitution in the changeLogs. 
+   See the Liquibase documentation for more details on token substitution.
 
 Here are a few examples of `liquibase` blocks in the build.gradle file.
 
@@ -117,8 +113,8 @@ Coming Soon
 
 
 If you want to use a different entry point than the default 
-`liquibase.integration.commandline.Main`, you can configure a different main class. This is
-useful if you want, for instance, to derive certain company-specific parameters.
+`liquibase.integration.commandline.LiquibaseCommandLine`, you can configure a different main class.
+This is useful if you want, for instance, to derive certain company-specific parameters.
 
 ```groovy
 liquibase {
