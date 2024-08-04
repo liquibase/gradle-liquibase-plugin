@@ -43,10 +43,11 @@ older releases, see the [changelog](./changelog.md).
 
 - Commands in newer versions of Liquibase no longer have "values" at the end.  All options are 
   now passed in as regular arguments.  This both simplifies the plugin, and makes it more flexible.
-  The `liquibasecommandValue` Gradle property has been removed, and you can supply the value of any
-  valid Liquibase argument by setting a matching Gradle property, prefixed with `liquibase`.  for 
-  example to run the "tag" task, you can now run `gradlew tag -PliquibaseTag=myTag`.  This also
-  works to override values given in an `activity` block.
+  The `liquibasecommandValue` and `liquibaseExtraArguments` Gradle properties have been removed,
+  and you can supply the value of any valid Liquibase argument by setting a matching Gradle
+  property, prefixed with `liquibase`.  for example to run the "tag" task, you can now run
+  `gradlew tag -PliquibaseTag=myTag`.  This also works to override values given in an `activity`
+  block.
 
   Changelog Parameters can also be supplied this way, but because Gradle only lets you specify a 
   property once, all parameters need to be in the same property.  For example, 
