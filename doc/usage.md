@@ -17,7 +17,7 @@ To include the plugin into Gradle builds, simply add the following to your build
 
 ```groovy
 plugins {
-  id 'org.liquibase.gradle' version '2.2.1'
+  id 'org.liquibase.gradle' version '3.0.0'
 }
 ```
 
@@ -29,7 +29,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.liquibase:liquibase-gradle-plugin:2.2.1"
+        classpath "org.liquibase:liquibase-gradle-plugin:3.0.0"
     }
 }
 apply plugin: 'org.liquibase.gradle'
@@ -47,7 +47,7 @@ Coming Soon
 ### 2. Setting up the classpath
 
 The plugin will need to be able to find Liquibase on the classpath when it is applied, and again 
-when it runs a task.  At apply time, the plugin needs to be able to see Liquibase itself.  At
+when it runs a task.  At apply time, the plugin only needs to be able to see Liquibase itself.  At
 execution time, Liquibase will need to be able to find database drivers, changelog parsers, etc. in
 the classpath. this is done by adding Liquibase to `buildscript` dependencies, as well as one or
 more `liquibaseRuntime` dependencies to the `dependencies` block in the `build.gradle` file.  At a
