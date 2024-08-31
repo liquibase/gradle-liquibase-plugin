@@ -39,7 +39,7 @@ older releases, see the [changelog](./changelog.md).
   | liquibaseHubUrl                | hubUrl                         |
   | liquibaseProLicenseKey         | proLicenseKey                  |
 
-  The most important change is `changeLogFile`, which is now `changeLogFile`.
+  The most important change is `changeLogFile`, which is now `changelogFile`.
 
 - Commands in newer versions of Liquibase no longer have "values" at the end.  All options are 
   now passed in as regular arguments.  This both simplifies the plugin, and makes it more flexible.
