@@ -15,8 +15,11 @@
 package org.liquibase.gradle
 
 import liquibase.Scope
+import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandDefinition
 import liquibase.command.CommandFactory
+import liquibase.configuration.ConfigurationDefinition
+import liquibase.configuration.LiquibaseConfiguration
 import org.gradle.api.Project
 import org.gradle.api.Plugin
 
@@ -52,15 +55,20 @@ class LiquibasePlugin implements Plugin<Project> {
      * @param project the project to enhance
      */
     void applyTasks(Project project) {
-        // Make an argument builder for tasks to share.
+        // Make an argument builder for tasks to share, and initialize the global arguments while
+        // we are still in the apply phase.
         ArgumentBuilder builder = new ArgumentBuilder(project: project)
+        builder.initializeGlobalArguments()
+
         // Get the commands from the CommandFactory that are not internal, not hidden, and not the
         // init command.
         Set<CommandDefinition> commands = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommands(false)
         def supportedCommands = commands.findAll { !it.hidden && !it.name.contains("init") }
         supportedCommands.each {  command ->
+            // Build a list of all the arguments (and argument aliases) supported by the given command.
+            def supportedCommandArguments = Util.argumentsForCommand(command)
             // Let the builder know about the command so it can process arguments later
-            builder.addCommand(command)
+            builder.addCommandArguments(supportedCommandArguments)
 
             // If the command has a nested command, append it to the task name.
             def taskName = command.name[0]
@@ -75,7 +83,8 @@ class LiquibasePlugin implements Plugin<Project> {
             project.tasks.register(taskName, LiquibaseTask) {
                 group = 'Liquibase'
                 description = command.shortDescription
-                liquibaseCommand = command
+                commandName = command.name[0]
+                commandArguments = supportedCommandArguments
                 argumentBuilder = builder
             }
         }

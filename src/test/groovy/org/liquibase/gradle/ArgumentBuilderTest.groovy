@@ -9,6 +9,7 @@ import org.junit.Before
 import org.junit.Test
 
 import static org.junit.Assert.assertEquals
+import static org.liquibase.gradle.Util.argumentsForCommand
 
 /**
  * Unit tests for the {@link ArgumentBuilder}
@@ -70,11 +71,12 @@ class ArgumentBuilderTest {
         // more like an integration test, but it is the best we can do since we're coupled to the
         // Liquibase API anyway.
         argumentBuilder = new ArgumentBuilder(project: project)
+        argumentBuilder.initializeGlobalArguments()
         Set<CommandDefinition> commands = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommands(false)
         def supportedCommands = commands.findAll { !it.hidden && !it.name.contains("init") }
-        supportedCommands.each { command ->
+        supportedCommands.each { cmd ->
             // Let the builder know about the command so it can process arguments later
-            argumentBuilder.addCommand(command)
+            argumentBuilder.addCommandArguments(argumentsForCommand(cmd))
         }
     }
 
@@ -114,7 +116,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -146,7 +148,6 @@ class ArgumentBuilderTest {
     void buildLiquibaseArgsNoChangelog() {
         // DropAll doesn't send a changelog...
         command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("diff")
-
         expectedArgs = [
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
@@ -159,7 +160,7 @@ class ArgumentBuilderTest {
                 "--username=activityUsername",
         ]
 
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog parms when not using changelog-file?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -200,7 +201,7 @@ class ArgumentBuilderTest {
                 "--url=extUrl",
                 "--username=activityUsername",
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog and changelog parms with drop-all?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -248,7 +249,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we use the default value for output-dir with db-doc?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -292,7 +293,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -325,7 +326,7 @@ class ArgumentBuilderTest {
                 "--password=extPassword",
                 "--url=extUrl"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -364,7 +365,7 @@ class ArgumentBuilderTest {
                 "-Dparam1=value1",
                 "-Dparam2=value2"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -384,7 +385,7 @@ class ArgumentBuilderTest {
         expectedArgs = [
                 "status",
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }

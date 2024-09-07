@@ -36,7 +36,13 @@ class LiquibaseTask extends JavaExec {
 
     /** The Liquibase command to run */
     @Input
-    CommandDefinition liquibaseCommand
+    def commandName
+
+    @Input
+    def commandArguments
+
+    /** The supported arguments of the command */
+
 
     /** The argument builder that will build the arguments to sent to Liquiabse. */
     @Input
@@ -81,7 +87,7 @@ class LiquibaseTask extends JavaExec {
      */
     def runLiquibase(activity) {
 
-        def args = argumentBuilder.buildLiquibaseArgs(activity, liquibaseCommand)
+        def args = argumentBuilder.buildLiquibaseArgs(activity, commandName, commandArguments)
         setArgs(args)
 
         def classpath = project.configurations.getByName(LiquibasePlugin.LIQUIBASE_RUNTIME_CONFIGURATION)

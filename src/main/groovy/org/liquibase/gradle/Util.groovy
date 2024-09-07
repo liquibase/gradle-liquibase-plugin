@@ -1,5 +1,8 @@
 package org.liquibase.gradle
 
+import liquibase.command.CommandArgumentDefinition
+import liquibase.command.CommandDefinition
+
 /**
  * Utility class to hold our helper methods.
  *
@@ -32,6 +35,26 @@ class Util {
         // If we got this far then all the common indices are identical, so whichever version is
         // longer must be more recent
         return givenVersions.size() > targetVersions.size()
+    }
+
+    /**
+     * Get the command arguments for a Liquibase command
+     * @param liquibaseCommand the Liquibase CommandDefinition whose arguments we need.
+     * @return an array of supported arguments.
+     */
+    static def argumentsForCommand(CommandDefinition liquibaseCommand) {
+        // Build a list of all the arguments (and argument aliases) supported by the given command.
+        def supportedCommandArguments = []
+        liquibaseCommand.getArguments().each { argName, a ->
+            supportedCommandArguments += a.name
+            // Starting with Liquibase 4.16, command arguments can have aliases
+            def supportsAliases = CommandArgumentDefinition.getDeclaredFields().find { it.name == "aliases" }
+            if ( supportsAliases ) {
+                supportedCommandArguments += a.aliases
+            }
+        }
+        return supportedCommandArguments
+
     }
 
 }
