@@ -5,8 +5,10 @@ A plugin for [Gradle](http://gradle.org) that allows you to use [Liquibase](http
 to manage your database upgrades.  This project was originally created by Tim Berglund, and is
 currently maintained by Steve Saliman.
 
-Release 3.0.0 is finally out!
------------------------------
+Release 3.0.1 has been released
+-------------------------------
+
+Release 3.0.1 fixes a classpath issue that caused the plugin to call Liquibase incorrectly.
 
 After far too long, release 3.0.0 fixes compatability issues with newer versions of Liquibase. 
 **THIS IS A BREAKING CHANGE!**.  The plugin no longer works with versions of Liquibase older than
