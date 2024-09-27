@@ -38,13 +38,13 @@ class LiquibasePluginTest {
         assertNotNull("Project is missing tag task", task)
         assertTrue("tag task is the wrong type", task instanceof LiquibaseTask)
         assertTrue("tag task should be enabled", task.enabled)
-        assertEquals("tag task has the wrong command", "tag", task.liquibaseCommand.name[0])
+        assertEquals("tag task has the wrong command", "tag", task.commandName)
         // and the update task does not.
         task = project.tasks.findByName('update')
         assertNotNull("Project is missing update task", task)
         assertTrue("update task is the wrong type", task instanceof LiquibaseTask)
         assertTrue("update task should be enabled", task.enabled)
-        assertEquals("update task has the wrong command", "update", task.liquibaseCommand.name[0])
+        assertEquals("update task has the wrong command", "update", task.commandName)
     }
 
     /**
@@ -62,13 +62,13 @@ class LiquibasePluginTest {
         assertNotNull("Project is missing tag task", task)
         assertTrue("tag task is the wrong type", task instanceof LiquibaseTask)
         assertTrue("tag task should be enabled", task.enabled)
-        assertEquals("tag task has the wrong command", "tag", task.liquibaseCommand.name[0])
+        assertEquals("tag task has the wrong command", "tag", task.commandName)
         // and the update task does not.
         task = project.tasks.findByName('update')
         assertNotNull("Project is missing update task", task)
         assertTrue("update task is the wrong type", task instanceof LiquibaseTask)
         assertTrue("update task should be enabled", task.enabled)
-        assertEquals("update task has the wrong command", "update", task.liquibaseCommand.name[0])
+        assertEquals("update task has the wrong command", "update", task.commandName)
     }
 
     /**
@@ -89,13 +89,13 @@ class LiquibasePluginTest {
         assertNotNull("Project is missing tag task", task)
         assertTrue("tag task is the wrong type", task instanceof LiquibaseTask)
         assertTrue("tag task should be enabled", task.enabled)
-        assertEquals("tag task has the wrong command", "tag", task.liquibaseCommand.name[0])
+        assertEquals("tag task has the wrong command", "tag", task.commandName)
         // and the update task does not.
         task = project.tasks.findByName('liquibaseUpdate')
         assertNotNull("Project is missing update task", task)
         assertTrue("update task is the wrong type", task instanceof LiquibaseTask)
         assertTrue("update task should be enabled", task.enabled)
-        assertEquals("update task has the wrong command", "update", task.liquibaseCommand.name[0])
+        assertEquals("update task has the wrong command", "update", task.commandName)
 
         // Make sure the standard tasks didn't get created, since we created them with different
         // names.

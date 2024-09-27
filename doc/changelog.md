@@ -1,3 +1,10 @@
+Changes for 3.0.1
+=================
+- Changed the way the plugin initializes.  It now gets everything it needs from Liquibase during the
+  apply phase so that we don't need to query Liquibase at execution time.  This works around a bug
+  that was related to the fact that Liquibase came from two different jars depending on which phase
+  we were running.
+
 Changes for 3.0.0
 =================
 - The Liquibase Groovy Plugin now supports Liquibase 4.24+.  **THIS IS A BREAKING CHANGE!**.  This

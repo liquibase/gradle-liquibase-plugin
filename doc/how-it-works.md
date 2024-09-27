@@ -31,7 +31,7 @@ kebab-case arguments.
 
 There are two ways to specify the arguments for liquibase commands:
 
-1. In an `activity` block inside the `liquibase` block.  The [Usage](./doc/usage.md) page goes into
+1. In an `activity` block inside the `liquibase` block.  The [Usage](./usage.md) page goes into
   more detail, but basically, you can specify one or more "activities", each with its own collection
   of arguments, and the plugin will use those arguments when running that activity.  Any supported
   Liquibase argument can be placed in an `activity` block, and it will be passed to Liquibase.

@@ -153,7 +153,7 @@ gradle.taskGraph.whenReady { taskGraph ->
     // disable those tasks.
 
     // Comment this to publish to Gradle, Uncomment for Maven Central
-//	taskGraph.allTasks.findAll { it.name ==~ /.*MavenPublication.*/ }*.enabled = false
+	taskGraph.allTasks.findAll { it.name ==~ /.*MavenPublication.*/ }*.enabled = false
 
     // Only *require* signing if we are uploading a release version.  If we do need to sign, make
     // sure we've got the properties we need to do the signing.

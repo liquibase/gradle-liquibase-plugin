@@ -16,6 +16,10 @@ to your build.gradle file.
 This page gives the highlights newer releases.  For complete details of each release, including 
 older releases, see the [changelog](./changelog.md).
 
+### Release 3.0.1 (September 14, 2024)
+
+- This release fixes a bug that was causing Liquibase to be called without any arguments.
+
 ### Release 3.0.0 (July 15, 2024)
 
 - This release finally supports the latest versions of Liquibase, but **NO LONGER SUPPORTS VERSIONS
@@ -39,7 +43,7 @@ older releases, see the [changelog](./changelog.md).
   | liquibaseHubUrl                | hubUrl                         |
   | liquibaseProLicenseKey         | proLicenseKey                  |
 
-  The most important change is `changeLogFile`, which is now `changeLogFile`.
+  The most important change is `changeLogFile`, which is now `changelogFile`.
 
 - Commands in newer versions of Liquibase no longer have "values" at the end.  All options are 
   now passed in as regular arguments.  This both simplifies the plugin, and makes it more flexible.
