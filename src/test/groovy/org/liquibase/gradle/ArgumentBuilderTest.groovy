@@ -100,6 +100,7 @@ class ArgumentBuilderTest {
     @Test
     void buildLiquibaseArgsFullArguments() {
         expectedArgs = [
+                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -148,6 +149,7 @@ class ArgumentBuilderTest {
         command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("diff")
 
         expectedArgs = [
+                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -191,6 +193,7 @@ class ArgumentBuilderTest {
         // DropAll doesn't send a changelog...
         command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("dropAll")
         expectedArgs = [
+                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -234,6 +237,7 @@ class ArgumentBuilderTest {
         // The db-doc command has special handling
         command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("dbDoc")
         expectedArgs = [
+                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -279,6 +283,7 @@ class ArgumentBuilderTest {
     void buildLiquibaseArgsNoChangeLogParms() {
         activity.changelogParameters.clear()
         expectedArgs = [
+                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -318,6 +323,7 @@ class ArgumentBuilderTest {
         activity = new Activity("main")
 
         expectedArgs = [
+                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-format=extFormat",
                 "--log-level=info",
@@ -353,6 +359,7 @@ class ArgumentBuilderTest {
         argumentBuilder.project = ProjectBuilder.builder().build()
 
         expectedArgs = [
+                "--integration-name=gradle",
                 "--log-file=activityLog",
                 "--log-format=activityFormat", // because we no longer override it
                 "--log-level=info",
@@ -382,6 +389,7 @@ class ArgumentBuilderTest {
         activity.arguments = [:]
 
         expectedArgs = [
+                "--integration-name=gradle",
                 "status",
         ]
         actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command)
