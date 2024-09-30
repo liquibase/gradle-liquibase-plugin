@@ -6,6 +6,7 @@ import liquibase.command.CommandFactory
 import org.gradle.api.Project
 import org.gradle.api.Transformer
 import org.gradle.api.provider.Provider
+import org.gradle.api.specs.Spec
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Test
@@ -366,57 +367,8 @@ class ArgumentBuilderTest {
                 "--password=extPassword",
                 "--url=extUrl"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), new Provider<String>() {
-            @Override
-            String get() {
-                return "4.30.0"
-            }
 
-            @Override
-            String getOrNull() {
-                return null
-            }
-
-            @Override
-            String getOrElse(String defaultValue) {
-                return null
-            }
-
-            @Override
-            def <S> Provider<S> map(Transformer<? extends S, ? super String> transformer) {
-                return null
-            }
-
-            @Override
-            def <S> Provider<S> flatMap(Transformer<? extends Provider<? extends S>, ? super String> transformer) {
-                return null
-            }
-
-            @Override
-            boolean isPresent() {
-                return true
-            }
-
-            @Override
-            Provider<String> orElse(String value) {
-                return null
-            }
-
-            @Override
-            Provider<String> orElse(Provider<? extends String> provider) {
-                return null
-            }
-
-            @Override
-            Provider<String> forUseAtConfigurationTime() {
-                return null
-            }
-
-            @Override
-            def <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super String, ? super U, ? extends R> combiner) {
-                return null
-            }
-        })
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), new TestProvider())
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -478,5 +430,61 @@ class ArgumentBuilderTest {
         actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
+    }
+
+    class TestProvider implements Provider<String> {
+        @Override
+        String get() {
+            return "4.30.0"
+        }
+
+        @Override
+        String getOrNull() {
+            return null
+        }
+
+        @Override
+        String getOrElse(String defaultValue) {
+            return null
+        }
+
+        @Override
+        def <S> Provider<S> map(Transformer<? extends S, ? super String> transformer) {
+            return null
+        }
+
+        @Override
+        def <S> Provider<S> flatMap(Transformer<? extends Provider<? extends S>, ? super String> transformer) {
+            return null
+        }
+
+        @Override
+        boolean isPresent() {
+            return true
+        }
+
+        @Override
+        Provider<String> orElse(String value) {
+            return null
+        }
+
+        @Override
+        Provider<String> orElse(Provider<? extends String> provider) {
+            return null
+        }
+
+        @Override
+        Provider<String> forUseAtConfigurationTime() {
+            return null
+        }
+
+        @Override
+        def <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super String, ? super U, ? extends R> combiner) {
+            return null
+        }
+
+        <S> Provider<String> filter(Spec<S> spec) {
+            return null
+        }
     }
 }
