@@ -4,9 +4,13 @@ import liquibase.Scope
 import liquibase.command.CommandDefinition
 import liquibase.command.CommandFactory
 import org.gradle.api.Project
+import org.gradle.api.Transformer
+import org.gradle.api.provider.Provider
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Test
+
+import java.util.function.BiFunction
 
 import static org.junit.Assert.assertEquals
 import static org.liquibase.gradle.Util.argumentsForCommand
@@ -102,7 +106,6 @@ class ArgumentBuilderTest {
     @Test
     void buildLiquibaseArgsFullArguments() {
         expectedArgs = [
-                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -117,7 +120,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -150,7 +153,6 @@ class ArgumentBuilderTest {
         // DropAll doesn't send a changelog...
         command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("diff")
         expectedArgs = [
-                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -162,7 +164,7 @@ class ArgumentBuilderTest {
                 "--username=activityUsername",
         ]
 
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog parms when not using changelog-file?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -194,7 +196,6 @@ class ArgumentBuilderTest {
         // DropAll doesn't send a changelog...
         command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("dropAll")
         expectedArgs = [
-                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -204,7 +205,7 @@ class ArgumentBuilderTest {
                 "--url=extUrl",
                 "--username=activityUsername",
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog and changelog parms with drop-all?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -238,7 +239,6 @@ class ArgumentBuilderTest {
         // The db-doc command has special handling
         command = Scope.getCurrentScope().getSingleton(CommandFactory.class).getCommandDefinition("dbDoc")
         expectedArgs = [
-                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -253,7 +253,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we use the default value for output-dir with db-doc?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -284,7 +284,6 @@ class ArgumentBuilderTest {
     void buildLiquibaseArgsNoChangeLogParms() {
         activity.changelogParameters.clear()
         expectedArgs = [
-                "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-file=activityLog",
                 "--log-format=extFormat",
@@ -298,7 +297,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -324,6 +323,41 @@ class ArgumentBuilderTest {
         activity = new Activity("main")
 
         expectedArgs = [
+                "--classpath=extClasspath",
+                "--log-format=extFormat",
+                "--log-level=info",
+                "status",
+                "--password=extPassword",
+                "--url=extUrl"
+        ]
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        // For some reason, comparing arrays, doesn't work right, so join into single strings.
+        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
+    }
+
+    /**
+     * Test building arguments when the version of Liquibase is newer, and thus the
+     * --integration-name argument should be included.
+     *
+     * Expect the following arguments in exactly this order.
+     * --integration-name, with value gradle
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * status, which is the command
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
+     *
+     * Expect includeObjects and tag to be filtered out because they are not supported by the
+     * command, and globalArg and version to be filtered out because they aren't supported by
+     * Liquibase.  We also expect the usual values from the activity to be filtered out because we
+     * aren't setting any activity arguments.
+     */
+    @Test
+    void buildLiquibaseArgsActivityWithRecentVersionOfLiquibase() {
+        activity = new Activity("main")
+
+        expectedArgs = [
                 "--integration-name=gradle",
                 "--classpath=extClasspath",
                 "--log-format=extFormat",
@@ -332,7 +366,57 @@ class ArgumentBuilderTest {
                 "--password=extPassword",
                 "--url=extUrl"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), new Provider<String>() {
+            @Override
+            String get() {
+                return "4.30.0"
+            }
+
+            @Override
+            String getOrNull() {
+                return null
+            }
+
+            @Override
+            String getOrElse(String defaultValue) {
+                return null
+            }
+
+            @Override
+            def <S> Provider<S> map(Transformer<? extends S, ? super String> transformer) {
+                return null
+            }
+
+            @Override
+            def <S> Provider<S> flatMap(Transformer<? extends Provider<? extends S>, ? super String> transformer) {
+                return null
+            }
+
+            @Override
+            boolean isPresent() {
+                return true
+            }
+
+            @Override
+            Provider<String> orElse(String value) {
+                return null
+            }
+
+            @Override
+            Provider<String> orElse(Provider<? extends String> provider) {
+                return null
+            }
+
+            @Override
+            Provider<String> forUseAtConfigurationTime() {
+                return null
+            }
+
+            @Override
+            def <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super String, ? super U, ? extends R> combiner) {
+                return null
+            }
+        })
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -360,7 +444,6 @@ class ArgumentBuilderTest {
         argumentBuilder.project = ProjectBuilder.builder().build()
 
         expectedArgs = [
-                "--integration-name=gradle",
                 "--log-file=activityLog",
                 "--log-format=activityFormat", // because we no longer override it
                 "--log-level=info",
@@ -372,7 +455,7 @@ class ArgumentBuilderTest {
                 "-Dparam1=value1",
                 "-Dparam2=value2"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -390,10 +473,9 @@ class ArgumentBuilderTest {
         activity.arguments = [:]
 
         expectedArgs = [
-                "--integration-name=gradle",
                 "status",
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
