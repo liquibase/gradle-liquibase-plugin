@@ -104,7 +104,7 @@ class ArgumentBuilder {
      * @param supportedCommandArguments the command arguments supported by the command being run.
      * @return the argument string to pass to liquibase when we invoke it.
      */
-    def buildLiquibaseArgs(Activity activity, commandName, supportedCommandArguments, Provider<String> liquibaseVersionProvider) {
+    def buildLiquibaseArgs(Activity activity, commandName, supportedCommandArguments) {
         // This is what we'll ultimately return.
         def liquibaseArgs = []
 
@@ -113,12 +113,9 @@ class ArgumentBuilder {
         def commandArguments = []
         def sendingChangelog = false
 
-        if (liquibaseVersionProvider != null) {
-            // todo get the right LB Version here
-            if (Util.versionAtLeast(liquibaseVersionProvider.get(), '4.30')){
-                project.logger.debug("Adding --integration-name parameter because the Liquibase version supports it")
-                globalArgs += argumentString("integrationName", "gradle")
-            }
+        if (allGlobalArguments.contains("integrationName")) {
+            project.logger.debug("Adding --integration-name parameter because Liquibase supports it")
+            globalArgs += argumentString("integrationName", "gradle")
         }
 
         // Create a merged map of activity arguments and arguments given as Gradle properties, then

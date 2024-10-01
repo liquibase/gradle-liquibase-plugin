@@ -121,7 +121,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -165,7 +165,7 @@ class ArgumentBuilderTest {
                 "--username=activityUsername",
         ]
 
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog parms when not using changelog-file?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -206,7 +206,7 @@ class ArgumentBuilderTest {
                 "--url=extUrl",
                 "--username=activityUsername",
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we forget to filter out the changelog and changelog parms with drop-all?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -254,7 +254,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments.  Did we use the default value for output-dir with db-doc?",
                 expectedArgs.join(" "),  actualArgs.join(" "))
@@ -298,7 +298,7 @@ class ArgumentBuilderTest {
                 "-Dparam2=ext2",
                 "-Dparam3=ext3"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -331,7 +331,7 @@ class ArgumentBuilderTest {
                 "--password=extPassword",
                 "--url=extUrl"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -358,6 +358,8 @@ class ArgumentBuilderTest {
     void buildLiquibaseArgsActivityWithRecentVersionOfLiquibase() {
         activity = new Activity("main")
 
+        argumentBuilder.allGlobalArguments.add("integrationName")
+
         expectedArgs = [
                 "--integration-name=gradle",
                 "--classpath=extClasspath",
@@ -368,7 +370,8 @@ class ArgumentBuilderTest {
                 "--url=extUrl"
         ]
 
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), new TestProvider())
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        argumentBuilder.allGlobalArguments.remove("integrationName")
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -407,7 +410,7 @@ class ArgumentBuilderTest {
                 "-Dparam1=value1",
                 "-Dparam2=value2"
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
     }
@@ -427,64 +430,8 @@ class ArgumentBuilderTest {
         expectedArgs = [
                 "status",
         ]
-        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command), null)
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
         // For some reason, comparing arrays, doesn't work right, so join into single strings.
         assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
-    }
-
-    class TestProvider implements Provider<String> {
-        @Override
-        String get() {
-            return "4.30.0"
-        }
-
-        @Override
-        String getOrNull() {
-            return null
-        }
-
-        @Override
-        String getOrElse(String defaultValue) {
-            return null
-        }
-
-        @Override
-        def <S> Provider<S> map(Transformer<? extends S, ? super String> transformer) {
-            return null
-        }
-
-        @Override
-        def <S> Provider<S> flatMap(Transformer<? extends Provider<? extends S>, ? super String> transformer) {
-            return null
-        }
-
-        @Override
-        boolean isPresent() {
-            return true
-        }
-
-        @Override
-        Provider<String> orElse(String value) {
-            return null
-        }
-
-        @Override
-        Provider<String> orElse(Provider<? extends String> provider) {
-            return null
-        }
-
-        @Override
-        Provider<String> forUseAtConfigurationTime() {
-            return null
-        }
-
-        @Override
-        def <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super String, ? super U, ? extends R> combiner) {
-            return null
-        }
-
-        <S> Provider<String> filter(Spec<S> spec) {
-            return null
-        }
     }
 }
