@@ -4,7 +4,6 @@ package org.liquibase.gradle
 import liquibase.configuration.ConfigurationDefinition
 import liquibase.configuration.LiquibaseConfiguration
 import liquibase.Scope
-import org.gradle.api.provider.Provider
 
 /**
  * This class builds the Liquibase argument array for liquibase 4.24+.  Starting with Liquibase 4.4,
@@ -113,8 +112,8 @@ class ArgumentBuilder {
         def commandArguments = []
         def sendingChangelog = false
 
-        if (allGlobalArguments.contains("integrationName")) {
-            project.logger.debug("Adding --integration-name parameter because Liquibase supports it")
+        if ( allGlobalArguments.contains("integrationName") ) {
+            project.logger.debug("liquibase-plugin:    Adding --integration-name parameter because Liquibase supports it")
             globalArgs += argumentString("integrationName", "gradle")
         }
 
