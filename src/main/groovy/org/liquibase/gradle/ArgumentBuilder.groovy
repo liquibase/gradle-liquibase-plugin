@@ -112,6 +112,11 @@ class ArgumentBuilder {
         def commandArguments = []
         def sendingChangelog = false
 
+        if ( allGlobalArguments.contains("integrationName") ) {
+            project.logger.debug("liquibase-plugin:    Adding --integration-name parameter because Liquibase supports it")
+            globalArgs += argumentString("integrationName", "gradle")
+        }
+
         // Create a merged map of activity arguments and arguments given as Gradle properties, then
         // process each of the arguments from the map, figuring out what kind of argument each one
         // is and responding accordingly.

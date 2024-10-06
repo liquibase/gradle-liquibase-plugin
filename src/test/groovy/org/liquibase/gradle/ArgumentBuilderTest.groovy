@@ -332,6 +332,46 @@ class ArgumentBuilderTest {
     }
 
     /**
+     * Test building arguments when the version of Liquibase is newer, and thus the
+     * --integration-name argument should be included.
+     *
+     * Expect the following arguments in exactly this order.
+     * --integration-name, with value gradle
+     * --classpath, with the value from the command line because it isn't in the activity
+     * --log-format, with an overridden value
+     * --log-level=info, because it is global and the Activity has a default value
+     * status, which is the command
+     * --password, with an overridden value
+     * --url, with the value from the command line because it isn't in the activity
+     *
+     * Expect includeObjects and tag to be filtered out because they are not supported by the
+     * command, and globalArg and version to be filtered out because they aren't supported by
+     * Liquibase.  We also expect the usual values from the activity to be filtered out because we
+     * aren't setting any activity arguments.
+     */
+    @Test
+    void buildLiquibaseArgsActivityWithRecentVersionOfLiquibase() {
+        activity = new Activity("main")
+
+        argumentBuilder.allGlobalArguments.add("integrationName")
+
+        expectedArgs = [
+                "--integration-name=gradle",
+                "--classpath=extClasspath",
+                "--log-format=extFormat",
+                "--log-level=info",
+                "status",
+                "--password=extPassword",
+                "--url=extUrl"
+        ]
+
+        actualArgs = argumentBuilder.buildLiquibaseArgs(activity, command.name[0], argumentsForCommand(command))
+        argumentBuilder.allGlobalArguments.remove("integrationName")
+        // For some reason, comparing arrays, doesn't work right, so join into single strings.
+        assertEquals("Wrong arguments", expectedArgs.join(" "),  actualArgs.join(" "))
+    }
+
+    /**
      * Test building arguments when we have no command line arguments.
      * line.  Expect the following arguments in exactly this order.
      * --log-file, with the value from the activity
