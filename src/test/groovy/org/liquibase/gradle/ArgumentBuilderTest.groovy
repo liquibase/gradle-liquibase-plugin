@@ -4,14 +4,9 @@ import liquibase.Scope
 import liquibase.command.CommandDefinition
 import liquibase.command.CommandFactory
 import org.gradle.api.Project
-import org.gradle.api.Transformer
-import org.gradle.api.provider.Provider
-import org.gradle.api.specs.Spec
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Before
 import org.junit.Test
-
-import java.util.function.BiFunction
 
 import static org.junit.Assert.assertEquals
 import static org.liquibase.gradle.Util.argumentsForCommand
