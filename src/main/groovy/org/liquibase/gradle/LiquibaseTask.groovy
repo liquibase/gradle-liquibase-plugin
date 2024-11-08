@@ -14,10 +14,10 @@
 
 package org.liquibase.gradle
 
-import liquibase.command.CommandDefinition
 import org.gradle.api.Task
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
 
@@ -38,14 +38,12 @@ class LiquibaseTask extends JavaExec {
     @Input
     def commandName
 
+    /** The supported arguments of the command */
     @Input
     def commandArguments
 
-    /** The supported arguments of the command */
-
-
-    /** The argument builder that will build the arguments to sent to Liquiabse. */
-    @Input
+    /** The argument builder that will build the arguments to sent to Liquibase. */
+    @Internal
     ArgumentBuilder argumentBuilder
 
     /** a {@code Provider} that can provide a value for the liquibase version. */
